@@ -1341,7 +1341,16 @@ function settings(){
   };
   checkVoices(); setTimeout(checkVoices, 1200);
   drawer.querySelectorAll('[data-test]').forEach(b => b.onclick = () => sayIn(SAMPLE[b.dataset.test], b.dataset.test));
-  if ($('#install')) $('#install').onclick = () => { try { NTTS.openInstall().catch(() => {}); } catch(e) {} $('#msg').textContent = 'Depois de baixar as vozes, volte ao app e toque em Testar.'; };
+  if ($('#install')) $('#install').onclick = async () => {
+    const msg = $('#msg');
+    const Voz = (CAP.Plugins && CAP.Plugins.Voz) || (CAP.registerPlugin && CAP.registerPlugin('Voz'));
+    try {
+      await Voz.abrirConfiguracoes();
+      msg.textContent = 'Na tela que abriu, escolha os Serviços de Voz do Google, toque na engrenagem e em Instalar dados de voz. Baixe japonês e coreano, volte ao app e toque em Testar.';
+    } catch(e) {
+      msg.textContent = 'Não consegui abrir a tela de voz. Abra as Configurações do celular e pesquise por "texto para fala".';
+    }
+  };
   $('#close').onclick = () => { closeDrawer(); title(); };
   $('#roma').onchange = e => { SAVE.set.roma = e.target.checked; persist(); };
   $('#rate').onchange = e => { SAVE.set.rate = parseFloat(e.target.value); persist(); };
