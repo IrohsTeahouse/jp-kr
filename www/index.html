@@ -1,0 +1,1414 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0f10">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Kagami Geoul</title>
+<style>
+/* Layout: app de coluna única, como um tomo aberto. HUD fixo no topo da cena, cena no meio, gavetas (grimório, ajustes) por cima. Visual escuro fixo. */
+:root{
+  color-scheme:dark;
+  --bg:#0d0f10; --surface:#15191a; --surface-2:#1c2122; --line:#2b3233;
+  --fg:#d9d2c3; --muted:#8f8c82; --bone:#efe6d2;
+  --ok:#8fae78; --err:#c76a60; --blood:#9b3b33;
+  --jp:#c98a5c; --kr:#6fa8a0;
+  --accent:#b9a27a; --accent-soft:rgba(185,162,122,.12);
+  --f-display:"IM Fell English SC","Times New Roman",serif;
+  --f-body:"Spectral",Georgia,serif;
+  --f-jp:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
+  --f-kr:"Nanum Myeongjo","AppleMyungjo","Noto Serif KR","Batang",serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+body[data-lang="jp"]{--accent:var(--jp);--accent-soft:rgba(201,138,92,.13)}
+body[data-lang="kr"]{--accent:var(--kr);--accent-soft:rgba(111,168,160,.13)}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 48px;
+  background-image:radial-gradient(ellipse 90% 45% at 50% -10%,var(--accent-soft),transparent 70%);background-attachment:fixed;min-height:100%}
+.wrap{max-width:660px;margin:0 auto;display:grid;gap:18px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;color:var(--bone);margin:0;text-wrap:balance}
+p{margin:0}
+em{color:var(--bone);font-style:italic}
+.label{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.jp-t{font-family:var(--f-jp)} .kr-t{font-family:var(--f-kr)}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+button:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+button:disabled{cursor:default}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@keyframes rise{from{opacity:.0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Botões */
+.btn{background:var(--accent);color:#121212;padding:12px 20px;font-family:var(--f-mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;justify-self:start}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.4}
+.ghost{border:1px solid var(--line);padding:9px 14px;font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;color:var(--muted)}
+.ghost:hover{color:var(--fg);border-color:var(--accent)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* Tela de título */
+.title{display:grid;gap:22px;padding-top:6px}
+.brand{display:grid;gap:6px;border-bottom:1px solid var(--line);padding-bottom:18px}
+.brand .mark{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.brand .mark .k1{font-family:var(--f-jp);font-size:clamp(44px,12vw,68px);color:var(--jp);line-height:1}
+.brand .mark .k2{font-family:var(--f-kr);font-size:clamp(40px,11vw,62px);color:var(--kr);line-height:1}
+.brand .mark .dot{color:var(--muted);font-size:28px}
+.brand h1{font-size:clamp(30px,7vw,40px);line-height:1.05}
+.brand p{color:var(--muted);font-style:italic;max-width:52ch}
+.worlds{display:grid;gap:14px}
+.world{background:var(--surface);border:1px solid var(--line);padding:20px;display:grid;gap:10px;position:relative;overflow:hidden}
+.world .gl{position:absolute;right:-4px;top:-14px;font-size:110px;line-height:1;opacity:.12;pointer-events:none}
+.world h2{font-size:26px}
+.world p{font-size:15.5px;max-width:48ch}
+.world .meta{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.world.jp h2,.world.jp .gl{color:var(--jp)} .world.kr h2,.world.kr .gl{color:var(--kr)}
+.world.jp .btn{background:var(--jp)} .world.kr .btn{background:var(--kr)}
+.confirm{display:grid;gap:8px;border:1px solid var(--err);padding:12px;font-size:15px}
+.foot{font-size:13.5px;color:var(--muted);max-width:60ch}
+
+/* HUD */
+.hud{background:var(--surface);border:1px solid var(--line);padding:12px 14px;display:grid;gap:10px}
+.hud-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.hud-top .where{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meters{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.meter{display:grid;gap:5px;min-width:0}
+.meter .top{display:flex;justify-content:space-between;gap:6px;align-items:baseline}
+.meter .v{font-family:var(--f-mono);font-size:12.5px;color:var(--bone);font-variant-numeric:tabular-nums}
+.bar{height:5px;background:var(--surface-2);position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--blood);transition:width .5s}
+.bar.flu i{background:var(--accent)}
+.pips{display:flex;gap:4px}
+.pips i{flex:1;height:5px;background:var(--surface-2)}
+.pips i.on{background:#7a4ea0}
+.inv{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--f-mono);font-size:11px;padding:3px 8px;border:1px solid var(--line);color:var(--fg)}
+.chip.ally{border-color:var(--accent);color:var(--accent)}
+.chip.ward{border-color:#b39a4f;color:#d7bf72}
+@media (max-width:440px){.meters{grid-template-columns:1fr 1fr}.meters .meter:last-child{grid-column:1/-1}}
+
+/* Cena */
+.scene{background:var(--surface);border:1px solid var(--line);padding:clamp(18px,4vw,30px);display:grid;gap:18px;animation:rise .35s ease}
+.scene.err{border-style:dashed;border-color:rgba(199,106,96,.5)}
+.scene h2{font-size:clamp(24px,5.5vw,30px)}
+.scene .head{display:grid;gap:4px}
+.text{display:grid;gap:12px;max-width:62ch}
+.show{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.glyph{background:var(--bg);border:1px solid var(--line);padding:12px;display:grid;gap:4px;align-content:start;text-align:left}
+.glyph:hover{border-color:var(--accent)}
+.glyph .g{font-size:40px;line-height:1.15;color:var(--bone)}
+.glyph .r{font-family:var(--f-mono);font-size:12.5px;color:var(--accent)}
+.glyph .m{font-size:13.5px;color:var(--muted);line-height:1.4}
+.voice{border-left:2px solid var(--accent);padding:2px 0 2px 16px;display:grid;gap:2px}
+.voice .who{font-family:var(--f-mono);font-size:11.5px;color:var(--accent);letter-spacing:.08em}
+.voice .line{font-size:clamp(28px,7vw,38px);color:var(--bone);line-height:1.3}
+.voice .ro{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.listen{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.play{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--accent);padding:10px 16px;color:var(--bone);font-family:var(--f-mono);font-size:13px}
+.play svg{width:18px;height:18px;fill:var(--accent)}
+.play.sm{padding:5px 9px;font-size:11px;border-color:var(--line)}
+.play.sm svg{width:14px;height:14px}
+.reveal{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-decoration:underline}
+.ask{font-style:italic;color:var(--bone)}
+.opts{display:grid;gap:10px}
+.opt{background:var(--surface-2);border:1px solid var(--line);padding:13px 16px;text-align:left;display:flex;gap:14px;align-items:baseline;transition:border-color .2s}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt .k{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.opt .t{font-size:26px;color:var(--bone);line-height:1.25}
+.opt.plain .t{font-family:var(--f-body);font-size:17px}
+.opt:disabled{opacity:.45}
+.opt.right{opacity:1;border-color:var(--ok);background:rgba(143,174,120,.1)}
+.opt.wrong{opacity:1;border-color:var(--err);background:rgba(199,106,96,.12)}
+.opt.pick{opacity:1;border-color:var(--accent)}
+
+/* Montar */
+.slots{display:flex;gap:8px;flex-wrap:wrap;min-height:64px}
+.slot{width:56px;height:60px;border:1px dashed var(--line);display:grid;place-items:center;font-size:30px;color:var(--bone);background:var(--bg)}
+.slot.f{border-style:solid;border-color:var(--accent)}
+.slot.okk{border-color:var(--ok)} .slot.bad{border-color:var(--err)}
+.pool{display:flex;gap:8px;flex-wrap:wrap}
+.tile{width:56px;height:60px;border:1px solid var(--line);background:var(--surface-2);font-size:30px;color:var(--bone);display:grid;place-items:center}
+.tile:hover:not(:disabled){border-color:var(--accent)}
+.tile:disabled{opacity:.2}
+
+/* Traçar */
+.trace{position:relative;width:100%;max-width:320px;aspect-ratio:1/1;border:1px solid var(--line);background:var(--bg);touch-action:none}
+.trace .model{position:absolute;inset:0;display:grid;place-items:center;font-size:min(62vw,230px);color:var(--bone);opacity:.14;pointer-events:none;line-height:1}
+.trace canvas{position:absolute;inset:0;width:100%;height:100%}
+.selfeval{display:grid;gap:8px}
+
+/* Resultado */
+.out{display:grid;gap:12px;animation:rise .4s ease}
+.fate{padding:13px 15px;border:1px solid var(--line)}
+.fate b{display:block;font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;margin-bottom:4px;font-weight:500}
+.fate.good{border-color:rgba(143,174,120,.55)} .fate.good b{color:var(--ok)}
+.fate.bad{border-color:rgba(199,106,96,.6)} .fate.bad b{color:var(--err)}
+.fate.neutral b{color:var(--accent)}
+.note{font-size:14.5px;padding:10px 13px;border-left:2px solid #b39a4f;color:var(--fg)}
+.note.doom{border-left-color:var(--err)}
+.lesson{background:var(--bg);border:1px dashed var(--line);padding:13px 15px;display:grid;gap:6px}
+.lesson .lg{font-size:24px;color:var(--bone)}
+.lesson .lr{font-family:var(--f-mono);font-size:12.5px;color:var(--accent)}
+.lesson p{font-size:15px}
+
+/* Purificação e revisão */
+.track{display:flex;gap:6px;flex-wrap:wrap}
+.track i{width:18px;height:26px;border:1px solid var(--line);background:var(--bg);position:relative}
+.track i.lit{border-color:#d7bf72;background:linear-gradient(#d7bf72,rgba(215,191,114,.15) 40%,var(--bg))}
+.track i.out{opacity:.35}
+.track i.win{border-color:var(--accent);background:var(--accent-soft)}
+.track i.lose{border-color:var(--err)}
+
+/* Fim */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.stat{border:1px solid var(--line);padding:10px 12px;display:grid;gap:2px}
+.stat b{font-family:var(--f-mono);font-size:20px;color:var(--bone);font-weight:500;font-variant-numeric:tabular-nums}
+.locked{border:1px dashed var(--line);padding:14px;display:grid;gap:6px;color:var(--muted)}
+.locked h3{font-size:19px;color:var(--fg)}
+
+/* Gavetas */
+.drawer{position:fixed;inset:0;background:rgba(5,6,7,.78);z-index:20;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.panel{background:var(--surface);border:1px solid var(--line);width:100%;max-width:620px;padding:20px;display:grid;gap:16px}
+.panel .ph{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.panel h2{font-size:26px}
+.glist{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.gitem{border:1px solid var(--line);padding:10px;display:grid;gap:2px;text-align:left;background:var(--bg)}
+.gitem .g{font-size:28px;color:var(--bone);line-height:1.2}
+.gitem .r{font-family:var(--f-mono);font-size:12px;color:var(--accent)}
+.gitem .m{font-size:13px;color:var(--muted)}
+.gitem .sc{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);font-style:italic}
+.set{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:14px}
+.set:first-of-type{border-top:0;padding-top:0}
+textarea{width:100%;min-height:90px;background:var(--bg);color:var(--fg);border:1px solid var(--line);padding:10px;font-family:var(--f-mono);font-size:12px;resize:vertical;box-sizing:border-box}
+select{background:var(--bg);color:var(--fg);border:1px solid var(--line);padding:8px 10px;font:inherit;font-size:15px}
+.msg{font-size:14px;color:var(--accent);min-height:1em}
+.toggle{display:flex;gap:10px;align-items:center}
+.toggle input{accent-color:var(--accent);width:18px;height:18px}
+</style>
+
+</head>
+<body>
+<div class="wrap" id="app" aria-live="polite"></div>
+<div class="drawer" id="drawer" hidden></div>
+
+<script>
+const STORY = {};
+// Capítulo I · O Selo de Kagami (japonês)
+STORY.jp = {
+  name: `O Selo de Kagami`, lang: `Japonês`, tts: `ja-JP`, cls: `jp-t`, glyph: `鏡`,
+  mac: `穢れ`, macName: `kegare`, ward: `omamori`,
+  pitch: `Quando o espelho sagrado se partiu, levou sua voz. Reaprenda a falar antes que os mortos de Yomi aprendam o seu nome.`,
+  ch1: `A primeira voz`,
+  tiers: [
+    [`Lua limpa`, `Sua garganta está limpa e o kegare quase sumiu. Os espíritos já sussurram sobre o viajante que devolveu a voz de uma vila.`],
+    [`Névoa de Yomi`, `Você venceu, mas a névoa de Yomi ainda gruda na sua sombra. No Capítulo II, alguns espíritos vão sentir esse cheiro.`],
+    [`À beira do poço`, `Você chegou ao fim com o kegare no limite. A próxima jornada começa à beira do poço: mais um tropeço, e Yomi chama você de volta.`]
+  ],
+  next: `Capítulo II · A estrada da capital: as linhas S, T e N do hiragana, a primeira leitura de は e を, e uma raposa que cobra dívidas.`,
+  review: {
+    name: `Hyakumonogatari`, unit: `velas`,
+    intro: `Os aldeões de Kuchinashi celebram a voz recuperada como manda a tradição do período Edo: com o Hyakumonogatari, a noite das cem histórias de fantasmas. Cada história contada apaga uma vela. Hoje, cada resposta certa é uma história. Dizem que, quando a última vela se apaga, aparece a Aoandon, a mulher de pele azul e chifres, vestida de branco.`,
+    win: `A última vela se apaga. Na escuridão, a Aoandon aparece, com a pele azul brilhando como a chama de uma lanterna. Ela sorri com os dentes pintados de preto e deixa uma lanterna azul aos seus pés. No Capítulo II, ela revela uma resposta uma vez.`,
+    lose: `Algumas velas continuam acesas. A Aoandon aparece mesmo assim, irritada por ter sido chamada antes da hora, e anota num papel o que você esqueceu. Essas palavras vão assombrar você no começo do Capítulo II.`,
+    reward: `lanterna`
+  },
+  items: {
+    omamori: `Omamori (absorve 1 erro)`, kyuri: `Pepino do kappa`, folha: `Folha do tanuki`, kaki: `Caqui da zashiki-warashi`,
+    prato: `O décimo prato de Okiku`, caco1: `Caco do espelho · 1 de 8`, lanterna: `Lanterna Azul da Aoandon`
+  },
+  allies: { kodama: `Kodama`, chochin: `Chōchin (guia)`, chochin_r: `Chōchin (rabugento)`, kappa: `Kappa honrado`, oni_ao: `Oni azul desertor` },
+  lex: {
+    a: {g:`あ`, r:`a`, t:`s`}, i: {g:`い`, r:`i`, t:`s`}, u: {g:`う`, r:`u`, t:`s`}, e: {g:`え`, r:`e`, t:`s`}, o: {g:`お`, r:`o`, t:`s`},
+    ka: {g:`か`, r:`ka`, t:`s`}, ki: {g:`き`, r:`ki`, t:`s`}, ku: {g:`く`, r:`ku`, t:`s`}, ke: {g:`け`, r:`ke`, t:`s`}, ko: {g:`こ`, r:`ko`, t:`s`},
+    w_kaki: {g:`かき`, r:`kaki`, m:`caqui`, t:`m`}, w_kiku: {g:`きく`, r:`kiku`, m:`ouvir · crisântemo`, t:`m`},
+    w_ie: {g:`いえ`, r:`ie`, m:`casa`, t:`m`}, w_ike: {g:`いけ`, r:`ike`, m:`lagoa`, t:`m`},
+    w_kao: {g:`かお`, r:`kao`, m:`rosto`, t:`m`}, w_koe: {g:`こえ`, r:`koe`, m:`voz`, t:`m`}
+  },
+  nodes: {
+    P0: {type:`story`, st:1, cp:true, title:`Prólogo · Silêncio`,
+      text:`<p>Madeira úmida contra o rosto. Cheiro de incenso apagado. Você abre os olhos num santuário em ruínas, no alto de uma montanha que não lembra de ter subido.</p><p>No altar, o espelho sagrado <em>Yata no Kagami</em> está partido em oito pedaços. Você tenta chamar alguém, mas nenhum som sai. Quando o espelho quebrou, levou junto o seu <em>kotodama</em>, a alma das palavras. Sem ele, os vivos não ouvem você. Os mortos, sim.</p><p>Os sinos do santuário balançam sem vento. Uma brisa fria passa pela sua garganta, carregando um único som.</p>`,
+      next:`P0q`},
+    P0q: {type:`quiz`, st:1, title:`O primeiro som`, hear:`あ`, hr:`a`, plain:true,
+      ask:`Ouça a brisa. Que som ela carrega?`,
+      opts:[{t:`a`, ok:1}, {t:`o`}, {t:`u`}],
+      okText:`Sua garganta solta um "a" rouco, o primeiro som em muito tempo. No altar, uma chama azul acende sozinha.`,
+      failText:`O som escapa antes que você o agarre. As árvores ao redor repetem o que você disse, em vozes que não são humanas.`,
+      lesson:{g:`あ`, r:`a`, m:`O primeiro som do japonês. Por enquanto, basta reconhecer o "a" aberto, como em "casa". A letra vem na próxima cena.`},
+      next:`N1`, fail:`P0b`},
+    P0b: {type:`story`, err:true, title:`O Eco dos Kodama`,
+      text:`<p>Você tropeça para fora do santuário, entre cedros tão velhos que as raízes parecem muralhas. Nos galhos, pequenas figuras brancas com três furos no rosto, como máscaras de argila, viram a cabeça ao mesmo tempo.</p><p>São <em>kodama</em>, os espíritos que moram nas árvores antigas. Quando alguém grita na montanha e a voz volta, dizem que é um kodama respondendo. Eles não estão bravos. Estão curiosos. E querem ensinar.</p>`,
+      fx:{ally:`kodama`}, next:`P0b2`},
+    P0b2: {type:`speak`, title:`Repita com os kodama`,
+      text:`<p>Os kodama dizem cada som devagar, e o eco volta das montanhas. Ouça, repita em voz alta e diga com sinceridade como saiu. Aqui não há como errar.</p>`,
+      lines:[{g:`あ`, r:`a`}, {g:`い`, r:`i`}, {g:`う`, r:`u`}],
+      after:`Um kodama pequeno decide ir com você, escondido no seu bolso. Ele vai lembrar desta noite.`,
+      next:`N1`},
+    N1: {type:`story`, st:2, title:`A miko de cinzas`,
+      text:`<p>De volta ao altar, alguém espera por você: uma jovem de túnica branca e saia vermelha, as vestes de uma <em>miko</em>, sacerdotisa do santuário. Os pés dela não tocam o chão.</p><p>Ela mergulha o dedo na cinza do incenso e desenha uma letra no assoalho. Depois aponta para a própria boca e abre bem os lábios: "a".</p>`,
+      show:[{g:`あ`, r:`a`, m:`Três traços: um horizontal, um vertical que se curva, e um laço que cruza os dois.`}],
+      learn:[`a`], next:`N1q`},
+    N1q: {type:`quiz`, st:2, title:`Três letras na cinza`,
+      ask:`A miko apaga a cinza e desenha três letras parecidas. Qual é あ?`,
+      opts:[{t:`あ`, ok:1}, {t:`お`}, {t:`ぬ`}], learn:[`a`],
+      okText:`A miko sorri. A lanterna de papel pendurada no altar abre um olho único e mostra a língua: é uma chōchin-obake, uma lanterna que ganhou alma depois de cem anos. Ela se oferece para guiar você.`,
+      okFx:{ally:`chochin`},
+      failText:`Você aponta a letra errada. A lanterna velha do altar gargalha, abre um olho e uma boca enorme: uma chōchin-obake zombeteira.`,
+      lesson:{g:`あ・お`, r:`a · o`, m:`あ e お se parecem. お tem um pontinho solto no alto, à direita. あ não tem.`},
+      next:`N1t`, fail:`N1b`},
+    N1b: {type:`quiz`, err:true, title:`A lanterna que zomba`,
+      text:`<p>A chōchin-obake pula do gancho e quica pelo santuário, rindo. Dizem que objetos esquecidos por cem anos viram <em>tsukumogami</em> e se vingam de quem os maltratou. Ela promete ficar quieta se você provar que entende a letra.</p>`,
+      ask:`"Como se escreve あ? Qual traço vem primeiro?"`, plain:true,
+      opts:[{t:`O traço horizontal`, ok:1}, {t:`O laço`}, {t:`O traço vertical`}], learn:[`a`],
+      okText:`A lanterna resmunga, mas acende. Ela vai guiar você, reclamando de tudo pelo caminho.`,
+      okFx:{ally:`chochin_r`},
+      failText:`A chama se apaga com um sopro de deboche. Você sai do santuário no escuro total.`,
+      lesson:{g:`あ`, r:`a`, m:`Ordem dos traços: 1) o horizontal, 2) o vertical que se curva para a esquerda, 3) o laço que cruza os dois.`},
+      next:`N1t`, fail:`N2b`},
+    N1t: {type:`trace`, st:2, title:`Escreva você mesmo`, glyph:`あ`, key:`a`,
+      text:`<p>À luz da lanterna, trace あ por cima do modelo, na ordem dos traços. Depois compare e avalie com sinceridade. Isto não muda sua mácula.</p>`,
+      next:`N2`},
+    N2: {type:`story`, st:3, title:`Os seis Jizō`,
+      text:`<p>Uma escadaria de pedra desce a montanha. Na curva, seis estátuas de pedra com babadores vermelhos: os <em>Roku Jizō</em>, protetores dos viajantes e das almas das crianças. Ao pé de cada um, um montinho de pedras deixadas por quem passou.</p><p>Cada Jizō tem uma letra gravada no peito. Uma voz de criança, sem dono, explica: para seguir, é preciso deixar uma pedra aos pés do Jizō certo.</p>`,
+      show:[{g:`い`, r:`i`, m:`Dois traços curtos, lado a lado.`}, {g:`う`, r:`u`, m:`Um tracinho em cima e uma curva embaixo, como uma orelha.`}],
+      learn:[`i`, `u`], next:`N2q`},
+    N2q: {type:`quiz`, st:3, title:`A primeira pedra`, hear:`い`, hr:`i`,
+      ask:`A criança diz um som. Em qual Jizō você deixa a pedra?`,
+      opts:[{t:`い`, ok:1}, {t:`り`}, {t:`け`}], learn:[`i`],
+      okText:`A pedra fica de pé sozinha. A criança ri, em algum lugar.`,
+      failText:`A pedra rola para longe. O Jizō vira o rosto de pedra para o outro lado.`,
+      lesson:{g:`い・り`, r:`i · ri`, m:`い são dois traços curtos lado a lado. り parece, mas o traço da direita é bem mais longo.`},
+      next:`N2q2`, fail:`N2b`},
+    N2q2: {type:`quiz`, st:3, title:`A segunda pedra`, hear:`う`, hr:`u`,
+      ask:`Agora outro som. Qual Jizō?`,
+      opts:[{t:`う`, ok:1}, {t:`ら`}, {t:`つ`}], learn:[`u`],
+      okText:`O sexto Jizō abre os olhos de pedra. Uma bolsinha de brocado aparece na sua mão: um omamori, amuleto de proteção.`,
+      okFx:{item:`omamori`},
+      failText:`A pedra cai no lugar errado. Atrás de você, o chão começa a ranger como seixos de rio.`,
+      lesson:{g:`う`, r:`u`, m:`う tem um tracinho em cima e uma curva embaixo. O som é um "u" com os lábios pouco arredondados.`},
+      next:`N3`, fail:`N2b`},
+    N2b: {type:`build`, err:true, title:`Sai no Kawara`,
+      text:`<p>A escadaria some. Você está no leito seco de um rio de pedras cinzentas: o <em>Sai no Kawara</em>, onde as almas de crianças empilham pedras rezando pelos pais. Um oni de pele vermelha chuta as torres e ri. Diz a lenda que só Jizō protege essas crianças.</p><p>Uma menina estende três pedras para você. Cada uma tem uma vogal.</p>`,
+      ask:`Empilhe as pedras na ordem dos sons: a, i, u.`,
+      target:[`あ`, `い`, `う`], pool:[`う`, `あ`, `い`], learn:[`a`, `i`, `u`],
+      okText:`A torre fica de pé. As crianças apontam uma trilha escondida entre as pedras, até uma encruzilhada.`,
+      failText:`O oni derruba a torre outra vez. As crianças fogem, e você segue sozinho, com o frio do rio nos ossos.`,
+      lesson:{g:`あ い う`, r:`a i u`, m:`A ordem das vogais japonesas é あ い う え お. Toda tabela de kana segue essa ordem.`},
+      next:`N3`, fail:`N3`},
+    N3: {type:`story`, st:4, title:`Os três torii`,
+      text:`<p>A trilha termina numa encruzilhada com três portais vermelhos, os <em>torii</em>, que marcam a entrada de um lugar sagrado. Cada um tem uma letra pintada na viga de cima.</p><p>Sentada no portal do meio, uma raposa branca com duas caudas observa você. É uma <em>kitsune</em>, mensageira de Inari, a divindade do arroz. Kitsune são famosas por enganar viajantes.</p>`,
+      show:[{g:`え`, r:`e`, m:`Um tracinho em cima e um corpo que termina num rabinho.`}, {g:`お`, r:`o`, m:`Parecida com あ, mas com um pontinho solto no alto, à direita.`}],
+      learn:[`e`, `o`], next:`N3g`},
+    N3g: {type:`gate`, go:`omamori`, yes:`N3t`, no:`N3l`},
+    N3t: {type:`story`, st:4, title:`A raposa diz a verdade`,
+      text:`<p>A raposa fareja o omamori na sua mão e abaixa as orelhas. "Esse amuleto é do Jizō. Não posso mentir para quem ele protege."</p><p>"え leva ao rio do kappa. う leva ao bosque de bambu. お leva ao portão do oni. Escolha."</p>`,
+      next:`N3q`},
+    N3l: {type:`story`, st:4, title:`A raposa sorri`,
+      text:`<p>"O caminho seguro é o do お", diz a raposa, sorrindo demais.</p><p>Raposas mentem para quem anda sem proteção. Sem amuleto, você só pode confiar no que consegue ler. Os aldeões dessa montanha costumam dizer: o お é de <em>oni</em>.</p>`,
+      next:`N3q`},
+    N3q: {type:`quiz`, st:4, title:`Sob qual torii?`,
+      ask:`Sob qual torii você passa?`,
+      opts:[{t:`え`, ok:1, go:`N4a`, res:`Você segue o som "e" até o barulho de água corrente.`},
+            {t:`う`, ok:1, go:`N4b`, res:`Você segue o som "u" até o farfalhar de um bambuzal.`},
+            {t:`お`, go:`N4c`}],
+      learn:[`e`, `o`],
+      failText:`Você passa sob o torii errado. As colunas estão manchadas de algo escuro, e o ar cheira a ferro.`,
+      lesson:{g:`え・お`, r:`e · o`, m:`え termina num rabinho. お tem o pontinho solto à direita.`}},
+    N4a: {type:`choice`, st:5, title:`O rio do kappa`,
+      text:`<p>Um rio negro corta a mata. Sobre a primeira pedra de travessia está um <em>kappa</em>: casco nas costas, bico de tartaruga e um prato cheio d'água no alto da cabeça. Enquanto o prato estiver cheio, ele é mais forte que dez homens.</p><p>"Ninguém atravessa sem lutar comigo", ele diz, estalando os dedos palmados.</p>`,
+      opts:[{t:`Curvar-se profundamente diante dele`, go:`N4aq`, fx:{ally:`kappa`}, res:`Por educação, o kappa se curva de volta. A água do prato derrama e as forças dele somem. Envergonhado, mas honrado, ele deixa você tentar a travessia.`},
+            {t:`Aceitar a luta`, go:`N4aq`, fx:{hp:-30}, res:`O kappa é muito mais forte do que parece. Ele derruba você três vezes antes de se cansar, e só então deixa você tentar a travessia.`}]},
+    N4aq: {type:`build`, st:5, title:`As pedras do rio`,
+      text:`<p>Cinco pedras afloram da água escura, cada uma com uma vogal. As pedras só aguentam peso se forem chamadas na ordem certa.</p>`,
+      ask:`Atravesse chamando as pedras na ordem das vogais.`,
+      target:[`あ`, `い`, `う`, `え`, `お`], pool:[`え`, `あ`, `お`, `う`, `い`], learn:[`a`, `i`, `u`, `e`, `o`],
+      okText:`Você chega à outra margem seco. O kappa joga um pepino para você: "Para pagar o próximo kappa. Somos muitos."`,
+      okFx:{item:`kyuri`},
+      failText:`Uma pedra afunda sob seus pés. Mãos verdes e palmadas agarram seu tornozelo.`,
+      lesson:{g:`あいうえお`, r:`a i u e o`, m:`A linha das vogais completa. Você já conhece todas.`},
+      next:`M1`, fail:`N4a2`},
+    N4a2: {type:`choice`, err:true, title:`O fundo do rio`,
+      text:`<p>O kappa arrasta você para o fundo. Dizem que os kappa roubam dos afogados o <em>shirikodama</em>, uma bola mística onde mora parte da alma. Você tem fôlego para uma única decisão.</p>`,
+      opts:[{t:`Propor uma luta de sumô, curvando-se antes`, go:`M1`, res:`Kappa adoram sumô. Ele aceita, se curva por reflexo e derrama a água do prato. Você nada para a superfície, inteiro.`},
+            {t:`Debater-se e fugir`, go:`M1`, fx:{hp:-20, flag:`kappa_alma`}, res:`Você escapa, mas sem algo que não sabe nomear. Mais adiante na jornada, o kappa vai cobrar o que levou.`}]},
+    N4b: {type:`quiz`, st:5, title:`O monge do bambuzal`,
+      text:`<p>No bosque de bambu, um monge baixinho e barrigudo recita um sutra escrito num pergaminho. Ele pede uma oferenda em troca de uma bênção para a viagem.</p><p>Mas há algo errado no pergaminho. Ele diz conter as cinco vogais sagradas, e uma delas não é vogal.</p>`,
+      speaker:`O pergaminho`, line:`あ い ら え お`,
+      ask:`Qual letra é falsa?`,
+      opts:[{t:`ら`, ok:1}, {t:`い`}, {t:`え`}], learn:[`u`],
+      okText:`O "monge" fica vermelho. Puf: uma folha cai da cabeça dele, e no lugar há um tanuki gordo e envergonhado. Ele dá a folha de presente: com ela, você vai poder se disfarçar no futuro.`,
+      okFx:{item:`folha`},
+      failText:`Você não percebe nada e entrega o que tem. O monge abençoa você com entusiasmo exagerado e some no bambuzal.`,
+      failFx:{lose:`omamori`},
+      lesson:{g:`う・ら`, r:`u · ra`, m:`ら tomou o lugar de う. Elas se parecem, mas o traço de cima de ら é inclinado e o corpo desce reto antes da curva.`},
+      next:`M1`, fail:`N4b2`},
+    N4b2: {type:`quiz`, err:true, title:`O tanuki arrependido`,
+      text:`<p>Mais adiante, o tanuki espera sentado numa pedra, com cara de remorso. Tanuki pregam peças, mas costumam ter bom coração. "Se acertar desta vez, devolvo o que levei."</p>`,
+      speaker:`O segundo pergaminho`, line:`あ ぬ う え め`,
+      ask:`Quais duas letras são falsas?`,
+      opts:[{t:`ぬ e め`, ok:1}, {t:`あ e う`}, {t:`え e う`}],
+      okText:`O tanuki devolve um omamori e faz uma reverência desajeitada.`,
+      okFx:{item:`omamori`},
+      failText:`Ele foge rindo pelo bambuzal, levando o que levou.`,
+      lesson:{g:`ぬ・め`, r:`nu · me`, m:`ぬ e め se parecem: ぬ tem um laço no fim, め não. Nenhuma das duas é vogal; você vai aprendê-las mais adiante.`},
+      next:`M1`, fail:`M1`},
+    N4c: {type:`story`, err:true, st:5, title:`O portão do oni`,
+      text:`<p>Atrás do torii há um portão de ferro. Diante dele, um <em>oni</em> vermelho, de chifres curtos e clava de ferro com cravos, ri alto. Os oni são os carcereiros de Yomi, o mundo dos mortos.</p><p>No chão há um saco de feijões torrados. Você lembra: todo ano, no <em>Setsubun</em>, as famílias japonesas jogam feijões contra os oni gritando "oni wa soto", fora oni. É o <em>mamemaki</em>.</p>`,
+      fx:{mac:1}, next:`N4cq`},
+    N4cq: {type:`quiz`, st:5, title:`Mamemaki`, hear:`おにはそと`, hr:`o-ni-wa so-to`,
+      speaker:`Você grita`, line:`おには そと`, roma:`oni wa soto`, plain:true,
+      ask:`Jogue um feijão a cada som "o" que ouvir. Quantos feijões são?`,
+      opts:[{t:`1`}, {t:`2`}, {t:`3`, ok:1}], learn:[`o`],
+      okText:`Três feijões, três acertos: o-ni, so, to. O oni uiva e foge pelo portão. Você aprendeu お melhor do que em qualquer outro caminho.`,
+      okFx:{flu:12, flag:`mame`},
+      failText:`Os feijões batem no chão sem ritmo. O oni ri, agarra você pelo colarinho e o arrasta para dentro do portão.`,
+      lesson:{g:`お・そ・と`, r:`o · so · to`, m:`A vogal mora dentro de cada sílaba: そ é "s+o", と é "t+o". Por isso são três sons "o". (Aqui は se lê "wa"; isso vem depois.)`},
+      next:`M1`, fail:`ALT1`},
+    ALT1: {type:`story`, err:true, title:`A forja do oni`,
+      text:`<p>Os oni de Yomi põem as almas para trabalhar nas forjas. Você acorda acorrentado, o calor rachando seus lábios.</p><p>Um oni jovem, de pele azul, parece odiar o próprio trabalho. Quando os outros saem, ele risca uma letra no chão com a unha. "Ka. A linha do K: k mais a. Com essa letra se abre a cela. Não conte a ninguém."</p>`,
+      show:[{g:`か`, r:`ka`, m:`k + a. Um traço com gancho, um vertical, e um tracinho à direita.`}],
+      learn:[`ka`], next:`ALT2`},
+    ALT2: {type:`quiz`, err:true, title:`A fechadura`,
+      ask:`A fechadura tem três símbolos. O oni azul sussurra: "Toque no ka." Qual é か?`,
+      opts:[{t:`か`, ok:1}, {t:`や`}, {t:`ち`}], learn:[`ka`],
+      okText:`A cela abre. O oni azul foge com você: um desertor de Yomi. Vocês saem direto numa vila silenciosa, sem passar pela cachoeira de purificação.`,
+      okFx:{ally:`oni_ao`},
+      failText:`A fechadura dá um choque. O oni azul arromba a porta mesmo assim, e vocês fogem feridos, sem passar pela cachoeira de purificação.`,
+      lesson:{g:`か・や`, r:`ka · ya`, m:`か tem o tracinho solto à direita. や tem um traço longo cruzando a curva.`},
+      next:`H0`, fail:`H0`},
+    M1: {type:`purify`, st:6, title:`Misogi na cachoeira`,
+      text:`<p>Todos os caminhos descem até uma cachoeira gelada. Uma corda sagrada de palha, a <em>shimenawa</em>, marca a pedra onde os peregrinos fazem o <em>misogi</em>: a purificação pela água, que lava o kegare do corpo e do espírito.</p><p>Debaixo da queda, você recita o que aprendeu. Cada acerto lava um pouco da mácula. Os erros aqui não pesam: só não lavam.</p>`,
+      n:4, max:2, next:`H0`},
+    H0: {type:`story`, st:7, cp:true, title:`A vila Kuchinashi`,
+      text:`<p>Ao pé da montanha há uma vila onde ninguém fala. O nome é um trocadilho cruel: <em>kuchinashi</em> é a gardênia, e também quer dizer "sem boca". Os moradores abrem a boca e nada sai. Perderam a voz para o mesmo espelho que você.</p><p>Para devolver a voz da vila, vogais não bastam. Uma consoante mais uma vogal formam uma sílaba: k + a = か, k + i = き. Esta é a linha do K.</p>`,
+      show:[{g:`か`, r:`ka`}, {g:`き`, r:`ki`}, {g:`く`, r:`ku`}, {g:`け`, r:`ke`}, {g:`こ`, r:`ko`}],
+      learn:[`ka`, `ki`, `ku`, `ke`, `ko`], next:`H1`},
+    H1: {type:`quiz`, st:7, title:`A criança da casa`, hear:`き`, hr:`ki`,
+      text:`<p>Numa casa grande, uma menina de cabelo curto e quimono vermelho brinca sozinha com uma bola de pano. Os moradores olham para ela com medo e respeito: é uma <em>zashiki-warashi</em>, o espírito-criança que traz fortuna à casa onde mora. Ela é a única na vila que ainda tem voz.</p>`,
+      ask:`Ela canta um som e aponta três letras. Qual ela cantou?`,
+      opts:[{t:`き`, ok:1}, {t:`さ`}, {t:`ち`}], learn:[`ki`],
+      okText:`Ela bate palmas e rabisca duas letras no chão: かき.`,
+      failText:`A menina faz bico. Espíritos-criança se ofendem fácil.`,
+      lesson:{g:`き・さ`, r:`ki · sa`, m:`き tem dois traços horizontais; さ tem só um. As duas terminam numa curva parecida.`},
+      next:`H1b`, fail:`H1e`},
+    H1b: {type:`quiz`, st:7, title:`O presente`, hear:`かき`, hr:`kaki`,
+      speaker:`Zashiki-warashi`, line:`かき`, roma:`kaki`, plain:true,
+      ask:`Ela oferece uma fruta laranja e diz o nome dela. O que é かき?`,
+      opts:[{t:`caqui`, ok:1}, {t:`casa`}, {t:`lagoa`}], learn:[`w_kaki`],
+      okText:`Ela dá o caqui a você. Numa casa onde mora uma zashiki-warashi, nunca falta comida.`,
+      okFx:{item:`kaki`},
+      failText:`Ela come o caqui sozinha, olhando feio para você.`,
+      lesson:{g:`かき`, r:`kaki`, m:`Caqui. A fruta e a palavra vieram do Japão: o "caqui" do português vem de kaki.`},
+      next:`H2`, fail:`H1e`},
+    H1e: {type:`build`, err:true, title:`A casa abandonada`,
+      text:`<p>A menina sai pela porta e não olha para trás. Diz a lenda que, quando a zashiki-warashi deixa uma casa, a família cai em desgraça. Na mesma hora, o telhado começa a ranger.</p><p>Para que ela volte, você precisa escrever, numa placa na porta, o nome da fruta que ela ofereceu: ka-ki.</p>`,
+      ask:`Monte a palavra "kaki" com as peças.`,
+      target:[`か`, `き`], pool:[`か`, `き`, `や`, `さ`], learn:[`w_kaki`, `ka`, `ki`],
+      okText:`A menina espia pela janela, ri e volta para dentro. A casa para de ranger.`,
+      failText:`A placa fica torta. A casa não cai, mas a família olha para você com rancor mudo.`,
+      lesson:{g:`かき`, r:`kaki`, m:`か + き. Caqui.`},
+      next:`H2`, fail:`H2`},
+    H2: {type:`build`, st:8, title:`O poço de Okiku`, hear:`おきく`, hr:`o-ki-ku`,
+      text:`<p>No fundo da vila há um poço. De dentro dele, uma voz de mulher conta pratos: "ichimai... nimai...". É Okiku, a criada da lenda de <em>Banchō Sarayashiki</em>: acusada de quebrar um dos dez pratos do patrão, foi jogada no poço. Toda noite ela conta até nove e grita pelo décimo.</p><p>Ela sobe pela borda, pálida, os cabelos pingando. "Ninguém lembra meu nome", diz. Ele estava escrito no último prato, mas apagou.</p>`,
+      ask:`Ouça o nome dela e reescreva no prato.`,
+      target:[`お`, `き`, `く`], pool:[`お`, `あ`, `き`, `さ`, `く`, `へ`], learn:[`o`, `ki`, `ku`, `w_kiku`],
+      okText:`Okiku segura o prato e, pela primeira vez em séculos, para de contar. Ela entrega o prato a você: "O décimo. Leve. Talvez você precise de algo que ninguém tem."`,
+      okFx:{item:`prato`},
+      failText:`O nome sai errado. Okiku volta a contar, e agora conta você: "...nove. E um a mais." A mão gelada dela aperta seu pulso.`,
+      lesson:{g:`きく`, r:`kiku`, m:`O nome dela é お + きく. Sozinho, きく quer dizer "ouvir", e também é o nome do crisântemo.`},
+      next:`H3`, fail:`H2e`},
+    H2e: {type:`quiz`, err:true, title:`Contado como prato`, hear:`く`, hr:`ku`, dmg:20,
+      ask:`Para soltar a mão dela, diga o som que falta no nome. Ela sussurra. Qual letra é?`,
+      opts:[{t:`く`, ok:1}, {t:`へ`}, {t:`し`}], learn:[`ku`],
+      okText:`Okiku solta você e afunda de volta no poço, ainda contando, mas mais baixo.`,
+      failText:`Você se solta à força, com o pulso marcado de frio.`,
+      lesson:{g:`く・へ`, r:`ku · he`, m:`く é um bico apontado para a esquerda. へ é um telhado, com o bico para cima.`},
+      next:`H3`, fail:`H3`},
+    H3: {type:`story`, st:9, title:`Casa ou lagoa`,
+      text:`<p>A zashiki-warashi aparece correndo. "O chefe da vila está esperando na <em>いえ</em>, a casa grande. Não vá para a <em>いけ</em>, a lagoa! O senhor da lagoa está acordado."</p><p>Ela some antes que você pergunte por onde. Na saída da praça há duas placas de madeira.</p>`,
+      show:[{g:`いえ`, r:`ie`, m:`casa`}, {g:`いけ`, r:`ike`, m:`lagoa`}],
+      learn:[`w_ie`, `w_ike`], next:`H3q`},
+    H3q: {type:`quiz`, st:9, title:`Duas placas`,
+      ask:`Qual placa você segue?`,
+      opts:[{t:`いえ`, ok:1, go:`H4`, res:`A placa certa. A trilha sobe até uma casa grande com lanternas acesas.`}, {t:`いけ`, go:`H3e`}],
+      learn:[`w_ie`, `w_ike`, `ke`],
+      failText:`A trilha desce até uma água parada. Algo enorme se mexe sob a superfície.`,
+      lesson:{g:`え・け`, r:`e · ke`, m:`いえ e いけ só mudam numa letra. け tem um traço vertical à esquerda que え não tem.`}},
+    H3e: {type:`quiz`, err:true, title:`O senhor da lagoa`, hear:`け`, hr:`ke`, dmg:20,
+      text:`<p>A água se abre. Uma carpa do tamanho de um barco, com bigodes de dragão: o <em>ike no nushi</em>, o senhor da lagoa. Ele fala com voz de bolhas.</p>`,
+      ask:`"Diga se sou え ou け, e deixo você ir." Que som ele fez?`,
+      opts:[{t:`け`, ok:1}, {t:`え`}, {t:`は`}], learn:[`ke`],
+      okText:`O nushi afunda, satisfeito. Uma onda leva você até a trilha certa.`,
+      failText:`O rabo do nushi joga você para fora da lagoa, direto num espinheiro.`,
+      lesson:{g:`け・は`, r:`ke · ha`, m:`け e は se parecem; は tem um laço embaixo, à direita.`},
+      next:`H4`, fail:`H4`},
+    H4: {type:`quiz`, st:10, title:`A mulher sem rosto`, hear:`かお`, hr:`kao`,
+      text:`<p>No caminho para a casa grande, uma mulher chora agachada à beira da estrada, de costas, o rosto escondido nas mangas do quimono. Ela repete uma única palavra, sem parar.</p>`,
+      speaker:`A mulher`, line:`かお… かお…`, roma:`kao… kao…`, plain:true,
+      ask:`O que ela está dizendo?`,
+      opts:[{t:`rosto`, ok:1}, {t:`voz`}, {t:`casa`}], learn:[`w_kao`],
+      okText:`Você entende antes de ela se virar. Quando ela mostra o rosto liso, sem olhos, sem nariz e sem boca, você não grita. É uma noppera-bō, obra de uma mujina, um texugo que muda de forma para assustar viajantes. Sem o seu medo, ela se desfaz numa risada e corre para o mato.`,
+      okFx:{flag:`mujina`},
+      failText:`Você toca o ombro dela. Ela se vira: o rosto é liso como um ovo. Você corre sem olhar para trás.`,
+      lesson:{g:`かお`, r:`kao`, m:`Rosto. A mulher sem rosto vem do conto "Mujina", que Lafcadio Hearn registrou em Kwaidan (1904).`},
+      next:`H5`, fail:`H4e`},
+    H4e: {type:`quiz`, err:true, title:`A barraca de soba`,
+      text:`<p>Você corre até a luz de uma barraca de macarrão soba. O vendedor está de costas, mexendo o caldo. Sem fôlego, você tenta contar o que viu. Ele pergunta, ainda sem se virar:</p>`,
+      speaker:`O vendedor`, line:`こんな かお？`, roma:`konna kao?`,
+      ask:`Ele vai se virar. Antes disso, ache a letra こ, a primeira da pergunta.`,
+      opts:[{t:`こ`, ok:1}, {t:`に`}, {t:`た`}], learn:[`ko`],
+      okText:`Você reconhece o "ko" e entende a armadilha: "um rosto assim?". Fecha os olhos antes que ele se vire e passa pela barraca às cegas.`,
+      failText:`Ele se vira. O rosto dele também é liso. A lanterna da barraca se apaga e você foge pela escuridão.`,
+      lesson:{g:`こ・に`, r:`ko · ni`, m:`こ são dois traços horizontais. に tem um traço vertical à esquerda.`},
+      next:`H5`, fail:`H5`},
+    H5: {type:`build`, st:11, title:`O satori`, hear:`こえ`, hr:`ko-e`,
+      text:`<p>Na casa grande, o chefe da vila está imóvel no chão, a boca aberta. Sentado no peito dele há um <em>satori</em>, um yōkai peludo, parecido com um macaco, que lê pensamentos. Ele segura um <em>ofuda</em>, um talismã de papel onde selou a voz de toda a vila.</p><p>"Eu sei tudo o que você pensa", ele diz. "Mas não sei escrever o que roubei. Escreva, e devolvo." Ele diz a palavra em voz alta: ko-e.</p>`,
+      ask:`Escreva no ofuda a palavra que ele disse.`,
+      target:[`こ`, `え`], pool:[`こ`, `に`, `え`, `け`, `お`], learn:[`w_koe`, `ko`, `e`],
+      okText:`Você escreve sem pensar, rápido demais para o satori ler. Nos contos, o satori só é vencido por quem age sem pensar. O ofuda queima em chamas azuis, e a vila inteira grita ao mesmo tempo: a voz voltou.`,
+      okFx:{flu:10},
+      failText:`O satori lê sua dúvida antes de a mão terminar. Ele ri e rasga um canto do ofuda.`,
+      lesson:{g:`こえ`, r:`koe`, m:`Voz. A palavra que o espelho roubou de você.`},
+      next:`H6`, fail:`H5e`},
+    H5e: {type:`quiz`, err:true, title:`O que o satori lê`,
+      text:`<p>"Você nem sabe o que escreveu", diz o satori. "Diga ao menos o que significa, e devolvo metade."</p>`,
+      speaker:`O ofuda`, line:`こえ`, roma:`koe`, plain:true,
+      ask:`O que é こえ?`,
+      opts:[{t:`voz`, ok:1}, {t:`rosto`}, {t:`lagoa`}], learn:[`w_koe`],
+      okText:`O satori devolve metade da voz. A vila fala em sussurros, mas fala.`,
+      okFx:{flag:`voz_fraca`},
+      failText:`O satori foge com o ofuda pela janela. A vila continua muda, e a sua voz também ficou fraca.`,
+      failFx:{flag:`voz_perdida`},
+      next:`H6`, fail:`H6`},
+    H6: {type:`speak`, st:12, title:`O primeiro norito`,
+      text:`<p>O chefe da vila leva você ao pequeno santuário local e pede que recite as primeiras sílabas como um <em>norito</em>, uma oração xintoísta, para firmar o kotodama de volta na sua garganta. Ouça, repita em voz alta e avalie com sinceridade.</p>`,
+      lines:[{g:`あいうえお`, r:`a i u e o`}, {g:`かきくけこ`, r:`ka ki ku ke ko`}, {g:`こえ`, r:`koe`}],
+      after:`Quando você termina, algo brilha no fundo do sino do santuário: um caco do Yata no Kagami. O primeiro de oito.`,
+      fx:{item:`caco1`}, next:`END`},
+    END: {type:`end`},
+    BAD: {type:`bad`, title:`Final ruim · Devorado por Yomi`,
+      text:`<p>O kegare transborda. A névoa fica tão espessa que você já não sabe se está vivo.</p><p>Uma mulher de véu aparece com uma tigela de arroz fumegante. Você está faminto há dias, e come. É a comida de Yomi, o <em>yomotsuhegui</em>, e quem a come não volta: foi assim que a própria deusa Izanami ficou presa no mundo dos mortos.</p>`}
+  }
+};
+
+// Capítulo I · A Ponte de Jeoseung (coreano)
+STORY.kr = {
+  name: `A Ponte de Jeoseung`, lang: `Coreano`, tts: `ko-KR`, cls: `kr-t`, glyph: `魂`,
+  mac: `한`, macName: `han`, ward: `bujeok`,
+  pitch: `O ceifador levou a pessoa errada, e seu nome está borrado no registro dos mortos. Você tem 49 dias para reescrevê-lo com as letras do rei Sejong.`,
+  ch1: `Céu, terra e homem`,
+  tiers: [
+    [`Céu aberto`, `O han quase não pesa no seu peito. Na outra margem, a mudang já sabe seu nome, e Gangnim, a contragosto, também.`],
+    [`Névoa do rio`, `Você atravessou, mas o han ainda pesa. No Capítulo II, os fantasmas do rio vão reconhecer você pelo cheiro de ressentimento.`],
+    [`À beira do esquecimento`, `Você chegou ao fim com o han no limite. Seu nome no registro está por um fio: mais um tropeço, e ele some.`]
+  ],
+  next: `Capítulo II · O caminho de Bari: as consoantes ㄷ ㄹ ㅂ ㅅ, a letra final (batchim) e a primeira travessia do mundo dos mortos.`,
+  review: {
+    name: `Noite do Dokkaebi`, unit: `apostas`,
+    intro: `Quando a lua some, um mercado de dokkaebi aparece no cais: barracas de luzes azuis, geleia de trigo-sarraceno, risadas sem dono. Dokkaebi não resistem a uma aposta, e pagam o que devem. Cada palavra que você lembrar é uma aposta ganha.`,
+    win: `O dokkaebi-chefe joga a clava no chão, derrotado e feliz. Aposta é aposta: ele quebra uma lasca da própria bangmangi, a clava que faz aparecer o que se pede, e entrega a você. No Capítulo II, ela dá uma dica uma vez.`,
+    lose: `Os dokkaebi gargalham e recolhem o que você perdeu: as palavras que não lembrou. Elas vão aparecer de novo no começo do Capítulo II, até você ganhá-las de volta.`,
+    reward: `bangmangi`
+  },
+  items: {
+    bujeok: `Bujeok (absorve 1 erro)`, nojatdon: `Nojatdon (passagem)`, divida: `Dívida do dokkaebi`, vassoura: `Cabo de vassoura`,
+    prazo49: `Prazo de 49 dias`, bangmangi: `Lasca da bangmangi`
+  },
+  allies: { samsin: `Samsin Halmeoni`, tigre: `Tigre de Sansin`, gumiho: `Gumiho (instável)` },
+  lex: {
+    cheon: {g:`ㆍ`, r:`cheon`, m:`céu`, t:`m`}, ji: {g:`ㅡ`, r:`ji`, m:`terra`, t:`m`}, in: {g:`ㅣ`, r:`in`, m:`homem (a pessoa)`, t:`m`},
+    va: {g:`ㅏ`, r:`a`, say:`아`, t:`s`}, veo: {g:`ㅓ`, r:`eo`, say:`어`, t:`s`}, vo: {g:`ㅗ`, r:`o`, say:`오`, t:`s`}, vu: {g:`ㅜ`, r:`u`, say:`우`, t:`s`},
+    sa: {g:`아`, r:`a`, t:`s`}, seo: {g:`어`, r:`eo`, t:`s`}, so: {g:`오`, r:`o`, t:`s`}, su: {g:`우`, r:`u`, t:`s`}, si: {g:`이`, r:`i`, t:`s`},
+    cg: {g:`ㄱ`, r:`g / k`, say:`가`, t:`s`}, cn: {g:`ㄴ`, r:`n`, say:`나`, t:`s`}, cm: {g:`ㅁ`, r:`m`, say:`마`, t:`s`},
+    ga: {g:`가`, r:`ga`, t:`s`}, go: {g:`고`, r:`go`, t:`s`}, gu: {g:`구`, r:`gu`, t:`s`}, meo: {g:`머`, r:`meo`, t:`s`}, mu: {g:`무`, r:`mu`, t:`s`},
+    w_na: {g:`나`, r:`na`, m:`eu`, t:`m`}, w_neo: {g:`너`, r:`neo`, m:`você`, t:`m`}, w_nugu: {g:`누구`, r:`nugu`, m:`quem`, t:`m`},
+    w_namu: {g:`나무`, r:`namu`, m:`árvore`, t:`m`}, w_neomu: {g:`너무`, r:`neomu`, m:`demais`, t:`m`},
+    w_eomeoni: {g:`어머니`, r:`eomeoni`, m:`mãe`, t:`m`}, w_gotgam: {g:`곶감`, r:`gotgam`, m:`caqui seco`, t:`m`}
+  },
+  nodes: {
+    P0: {type:`story`, st:1, cp:true, title:`Prólogo · O Registro Borrado`,
+      text:`<p>Água negra, sem correnteza. Você está de pé numa margem de cinzas, descalço. Um homem alto, de manto negro e chapéu de abas largas, desenrola um pergaminho. É um <em>jeoseung saja</em>, um ceifador do mundo dos mortos, e o pergaminho é o <em>myeongbu</em>, o registro de quem deve morrer.</p><p>O seu nome está lá, borrado. "Vim buscar outra pessoa com o mesmo nome", ele resmunga. "Acontece. Mas o registro não aceita borrões. Só quem sabe escrever pode corrigir o próprio nome."</p><p>Ele desenha três traços na areia. "O rei Sejong fez todas as vogais com isto: o céu, a terra e o homem."</p>`,
+      show:[{g:`ㆍ`, r:`céu`, m:`Um ponto redondo, como o sol.`}, {g:`ㅡ`, r:`terra`, m:`Uma linha deitada, plana como o chão.`}, {g:`ㅣ`, r:`homem`, m:`Uma linha em pé: a pessoa entre o céu e a terra.`}],
+      learn:[`cheon`, `ji`, `in`], next:`P0q`},
+    P0q: {type:`quiz`, st:1, title:`Os três traços`,
+      ask:`Qual traço é o homem, de pé entre o céu e a terra?`,
+      opts:[{t:`ㅣ`, ok:1}, {t:`ㅡ`}, {t:`ㆍ`}], learn:[`in`],
+      okText:`O ceifador ergue uma sobrancelha. Um morto que entende o desenho das letras. Ele aceita ouvir você.`,
+      failText:`Você trava. A areia se mistura, e uma memória sobe da infância: mãos enrugadas segurando as suas.`,
+      lesson:{g:`ㆍ ㅡ ㅣ`, r:`céu · terra · homem`, m:`Os três traços-base do hangul, chamados 천지인 (cheonjiin). Toda vogal coreana nasce da combinação deles.`},
+      next:`N1`, fail:`P0b`},
+    P0b: {type:`story`, err:true, title:`As mãos de Samsin Halmeoni`,
+      text:`<p>A memória ganha corpo: uma velha de cabelos brancos, cheirando a algas e arroz. É <em>Samsin Halmeoni</em>, a deusa-avó que cuida do nascimento e da infância. Dizem que foi a palmada dela, para empurrar os bebês para o mundo, que deixou a mancha azulada nas costas deles.</p><p>"De pé, você é ㅣ", ela diz, puxando você para cima. "Deitado, é ㅡ. E o sol lá em cima é ㆍ."</p>`,
+      fx:{ally:`samsin`}, next:`P0b2`},
+    P0b2: {type:`quiz`, title:`E a terra?`,
+      ask:`Samsin pede que você se deite na areia. Que traço você é agora?`,
+      opts:[{t:`ㅡ`, ok:1}, {t:`ㅣ`}, {t:`ㆍ`}], learn:[`ji`],
+      okText:`Ela ri e amarra um fio branco no seu pulso: a meada que, no primeiro aniversário de uma criança coreana, simboliza vida longa.`,
+      failText:`Ela suspira, mas amarra o fio branco no seu pulso mesmo assim. "Você vai aprender. Avó sabe esperar."`,
+      lesson:{g:`ㅡ`, r:`terra`, m:`A linha deitada é a terra. Ela forma vogais como ㅗ e ㅜ.`},
+      next:`N1`, fail:`N1`},
+    N1: {type:`story`, st:2, title:`O sol nasce do homem`,
+      text:`<p>O ceifador chama o chefe dele: <em>Gangnim</em>, um mortal que, segundo um mito de Jeju, desceu ao mundo dos mortos para prender o rei Yeomra e acabou virando ceifador. Ele tem um sorriso cansado e mãos manchadas de tinta.</p><p>Ele desenha o céu ao lado do homem. "À direita, o sol nasce no leste: ㅏ, um som claro, a. À esquerda, o sol se põe: ㅓ, um som escuro, eo."</p>`,
+      show:[{g:`ㅏ`, r:`a`, say:`아`, m:`O ponto à direita do homem. "a", como em "casa".`}, {g:`ㅓ`, r:`eo`, say:`어`, m:`O ponto à esquerda. Parecido com o "ó" de "avó", mas sem arredondar os lábios.`}],
+      learn:[`va`, `veo`], next:`N1q`},
+    N1q: {type:`quiz`, st:2, title:`O som claro`, hear:`아`, hr:`a`,
+      ask:`Gangnim diz um som. Qual letra é?`,
+      opts:[{t:`ㅏ`, ok:1}, {t:`ㅓ`}, {t:`ㅗ`}], learn:[`va`],
+      okText:`Gangnim acena com a cabeça.`,
+      failText:`Gangnim estala a língua. A água do rio sobe até seus tornozelos, gelada.`,
+      lesson:{g:`ㅏ`, r:`a`, m:`O ponto do céu fica à direita do homem. É uma vogal clara.`},
+      next:`N1q2`, fail:`N1b`},
+    N1q2: {type:`quiz`, st:2, title:`O som escuro`, hear:`어`, hr:`eo`,
+      ask:`"E este?"`,
+      opts:[{t:`ㅓ`, ok:1}, {t:`ㅏ`}, {t:`ㅜ`}], learn:[`veo`],
+      okText:`Gangnim ri e joga algumas moedas aos seus pés: nojatdon, o dinheiro que se põe junto aos mortos para pagar a viagem. "Vai precisar no barco."`,
+      okFx:{item:`nojatdon`},
+      failText:`Gangnim estala a língua. Algo se mexe na água, perto dos seus pés.`,
+      lesson:{g:`ㅓ`, r:`eo`, m:`O ponto do céu fica à esquerda do homem. É uma vogal escura.`},
+      next:`N2`, fail:`N1b`},
+    N1b: {type:`quiz`, err:true, title:`Mul-gwishin`,
+      text:`<p>Uma mão branca sai da água e agarra seu tornozelo. É uma <em>mul-gwishin</em>, o fantasma de uma afogada, que puxa os vivos para o fundo para ter companhia. Ela solta um dedo a cada resposta certa.</p>`,
+      speaker:`Ela sussurra`, line:`ㅓ`, plain:true,
+      ask:`Que som tem esta letra? O ponto está à esquerda.`,
+      opts:[{t:`eo`, ok:1}, {t:`a`}, {t:`o`}], learn:[`veo`],
+      okText:`Ela solta seu tornozelo. Antes de afundar, sussurra o próprio nome. Você vai lembrar dele quando precisar.`,
+      okFx:{flag:`gwishin_nome`},
+      failText:`Você se solta tarde, encharcado, e sai pela margem errada.`,
+      lesson:{g:`ㅏ・ㅓ`, r:`a · eo`, m:`Ponto à direita: a. Ponto à esquerda: eo.`},
+      next:`N2`, fail:`N2b`},
+    N2: {type:`story`, st:3, title:`Os Jangseung`,
+      text:`<p>Na saída da margem, dois totens de madeira com caras enormes, olhos esbugalhados e sorrisos de dentes tortos: os <em>jangseung</em>, que guardam a entrada das aldeias coreanas contra doenças e espíritos. Num está escrito "Grande General sob o Céu"; no outro, "Grande Generala sob a Terra".</p><p>"Agora o céu e a terra", dizem os dois ao mesmo tempo. "O sol em cima da terra é ㅗ, o. O sol embaixo da terra é ㅜ, u."</p>`,
+      show:[{g:`ㅗ`, r:`o`, say:`오`, m:`O céu em cima da terra. Uma vogal clara.`}, {g:`ㅜ`, r:`u`, say:`우`, m:`O céu embaixo da terra. Uma vogal escura.`}],
+      learn:[`vo`, `vu`], next:`N2q`},
+    N2q: {type:`quiz`, st:3, title:`O General`, hear:`오`, hr:`o`,
+      ask:`O General diz um som. Qual letra é?`,
+      opts:[{t:`ㅗ`, ok:1}, {t:`ㅜ`}, {t:`ㅓ`}], learn:[`vo`],
+      okText:`O General abre os olhos de madeira e acena.`,
+      failText:`O General fecha a cara. A estrada atrás dele começa a se apagar.`,
+      lesson:{g:`ㅗ`, r:`o`, m:`Céu em cima da terra.`},
+      next:`N2q2`, fail:`N2b`},
+    N2q2: {type:`quiz`, st:3, title:`A Generala`, hear:`우`, hr:`u`,
+      ask:`Agora a Generala. Qual letra é?`,
+      opts:[{t:`ㅜ`, ok:1}, {t:`ㅗ`}, {t:`ㅡ`}], learn:[`vu`],
+      okText:`A Generala abre os olhos. Um papel amarelo com letras vermelhas cai das mãos dela: um bujeok, talismã de proteção.`,
+      okFx:{item:`bujeok`},
+      failText:`Os dois totens fecham os olhos ao mesmo tempo. A estrada some.`,
+      lesson:{g:`ㅜ`, r:`u`, m:`Céu embaixo da terra.`},
+      next:`N3`, fail:`N2b`},
+    N2b: {type:`build`, err:true, title:`Seonangdang`,
+      text:`<p>A estrada sumiu. Sobra uma trilha até um monte de pedras ao pé de uma árvore enfeitada com tiras de pano: um <em>seonangdang</em>, o santuário do espírito da colina. Quem passa deixa uma pedra e se curva, pedindo uma viagem segura.</p><p>As pedras daqui têm vogais gravadas.</p>`,
+      ask:`Empilhe as pedras na ordem dos sons: a, eo, o, u.`,
+      target:[`ㅏ`, `ㅓ`, `ㅗ`, `ㅜ`], pool:[`ㅗ`, `ㅏ`, `ㅜ`, `ㅓ`], learn:[`va`, `veo`, `vo`, `vu`],
+      okText:`O espírito da colina sopra um vento morno e mostra a trilha até uma encruzilhada.`,
+      failText:`As pedras desabam. Você se curva mesmo assim e segue, sem a bênção da colina.`,
+      lesson:{g:`ㅏ ㅓ ㅗ ㅜ`, r:`a · eo · o · u`, m:`Vogais em pé (ㅏ ㅓ) e vogais deitadas (ㅗ ㅜ).`},
+      next:`N3`, fail:`N3`},
+    N3: {type:`story`, st:4, title:`Os três postes`,
+      text:`<p>Uma encruzilhada com três postes de madeira, cada um com uma sílaba escrita a carvão. Uma voz no alto de uma árvore explica:</p><p>"Esse círculo no começo, ㅇ, é mudo. É só um lugar vazio, para a vogal não ficar sozinha. Então 아 se lê a, 어 se lê eo, 오 se lê o, 우 se lê u, e 이 se lê i."</p>`,
+      show:[{g:`아`, r:`a`}, {g:`어`, r:`eo`}, {g:`오`, r:`o`}, {g:`우`, r:`u`}, {g:`이`, r:`i`}],
+      learn:[`sa`, `seo`, `so`, `su`, `si`], next:`N3g`},
+    N3g: {type:`gate`, go:`bujeok`, yes:`N3t`, no:`N3l`},
+    N3t: {type:`story`, st:4, title:`A pega canta a verdade`,
+      text:`<p>A voz era de uma pega, a <em>kkachi</em>, o pássaro que traz boas notícias nos contos coreanos. Ela olha para o bujeok e canta a verdade:</p><p>"아 leva à montanha do tigre. 어 leva ao pântano dos dokkaebi. 오 leva à toca da raposa. Escolha entre os dois primeiros."</p>`,
+      next:`N3q`},
+    N3l: {type:`story`, st:4, title:`O falso canto`,
+      text:`<p>No galho há uma pega, mas os olhos dela são vermelhos. É um corvo imitando o canto. "Siga o 오", ele grasna.</p><p>Sem talismã, não dá para saber quem fala a verdade. Confie só no que você consegue ler: diziam os mais velhos que a raposa mora no 오.</p>`,
+      next:`N3q`},
+    N3q: {type:`quiz`, st:4, title:`Qual poste?`,
+      ask:`Qual caminho você segue?`,
+      opts:[{t:`아`, ok:1, go:`N4a`, res:`Você segue o 아 montanha acima, entre pinheiros.`},
+            {t:`어`, ok:1, go:`N4b`, res:`Você segue o 어 até um pântano coberto de névoa.`},
+            {t:`오`, go:`N4c`}],
+      learn:[`sa`, `seo`, `so`],
+      failText:`Você confunde as vogais e entra na trilha da raposa. O ar cheira a flores, doce demais.`,
+      lesson:{g:`어・오`, r:`eo · o`, m:`Em 어 o ponto fica à esquerda do homem. Em 오 ele fica em cima da terra.`}},
+    N4a: {type:`quiz`, st:5, title:`A montanha do tigre`, hear:`오`, hr:`o`,
+      text:`<p>Entre os pinheiros, um tigre enorme bloqueia a trilha. É o mensageiro de <em>Sansin</em>, o deus da montanha, que nas pinturas dos templos aparece como um velho sentado ao lado de um tigre. O tigre ruge sílabas.</p>`,
+      ask:`Que sílaba ele rugiu?`,
+      opts:[{t:`오`, ok:1}, {t:`우`}, {t:`어`}], learn:[`so`],
+      okText:`O tigre baixa a cabeça. Quem entende a fala da montanha pode montar nas costas dele. Ele leva você por cima do desfiladeiro.`,
+      okFx:{ally:`tigre`},
+      failText:`O tigre não gosta da resposta. Ele se agacha, pronto para saltar.`,
+      lesson:{g:`오・우`, r:`o · u`, m:`오: céu em cima da terra. 우: céu embaixo.`},
+      next:`M1`, fail:`N4a2`},
+    N4a2: {type:`quiz`, err:true, title:`O tigre faminto`, dmg:20,
+      text:`<p>Você lembra de um conto antigo. Um tigre faminto, à espreita, ouviu uma mãe dizer ao bebê que chorava: "Olha o tigre!". O bebê continuou chorando. Mas quando ela ofereceu um caqui seco, o bebê se calou na hora. O tigre fugiu, convencido de que o caqui seco era um monstro mais terrível que ele.</p>`,
+      ask:`Grite a palavra que o tigre teme.`, plain:true,
+      opts:[{t:`곶감 · caqui seco`, ok:1, say:`곶감`}, {t:`감사 · gratidão`, say:`감사`}, {t:`아이 · criança`, say:`아이`}], learn:[`w_gotgam`],
+      okText:`O tigre arregala os olhos e foge montanha acima. Você segue a pé, rindo e tremendo.`,
+      failText:`O tigre morde seu ombro antes de entender, e larga você no chão.`,
+      lesson:{g:`곶감`, r:`gotgam`, m:`Caqui seco. Você ainda não lê este bloco inteiro: ele tem consoantes e uma letra final que chegam no Capítulo II.`},
+      next:`M1`, fail:`M1`},
+    N4b: {type:`build`, st:5, title:`O pântano dos dokkaebi`,
+      text:`<p>Luzes azuis flutuam sobre o pântano: <em>dokkaebi-bul</em>, os fogos dos dokkaebi. Um deles surge da névoa, um duende de olhos brilhantes com uma clava de madeira no ombro. Dokkaebi são travessos, mas honrados com apostas.</p><p>"Leia meus fogos na ordem que eu disser, e fico te devendo. Erre, e você me deve." Ele canta: a, eo, o, u.</p>`,
+      ask:`Toque nos fogos na ordem que ele cantou.`,
+      target:[`아`, `어`, `오`, `우`], pool:[`우`, `오`, `아`, `어`], learn:[`sa`, `seo`, `so`, `su`],
+      okText:`O dokkaebi bate a clava no chão, irritado e honrado. Aposta é aposta: ele vai te dever um favor.`,
+      okFx:{item:`divida`},
+      failText:`"Perdeu!", ele grita, rindo. "Agora, ssireum!"`,
+      lesson:{g:`아 어 오 우`, r:`a · eo · o · u`, m:`Com o ㅇ mudo, cada vogal vira uma sílaba que se escreve sozinha.`},
+      next:`M1`, fail:`N4b2`},
+    N4b2: {type:`quiz`, err:true, title:`Luta até o amanhecer`, hear:`이`, hr:`i`,
+      text:`<p>Dokkaebi adoram o <em>ssireum</em>, a luta coreana. A cada queda, ele grita uma sílaba, e você só pode se levantar se souber qual é.</p>`,
+      ask:`Que sílaba ele gritou?`,
+      opts:[{t:`이`, ok:1}, {t:`어`}, {t:`우`}], learn:[`si`],
+      okText:`Você luta a noite inteira. Ao amanhecer, o dokkaebi vira o que, nos contos, eles sempre foram: um cabo de vassoura velho e manchado de sangue. Você o leva como bastão.`,
+      okFx:{item:`vassoura`},
+      failText:`Você passa a noite no chão do pântano. Ao amanhecer só sobra um cabo de vassoura, e o barco já partiu uma vez sem você.`,
+      failFx:{flag:`atraso`},
+      lesson:{g:`이`, r:`i`, m:`ㅇ mudo + ㅣ, o homem. Som de "i".`},
+      next:`M1`, fail:`M1`},
+    N4c: {type:`story`, err:true, st:5, title:`A toca da Gumiho`,
+      text:`<p>Uma casa de telhado curvo no meio do mato, onde não deveria haver casa. Uma jovem de vestido branco convida você para descansar. Na sombra dela, você conta: nove caudas. É uma <em>gumiho</em>, a raposa de nove caudas.</p><p>Ela segura entre os lábios uma conta brilhante, o <em>yeou guseul</em>, com que suga a energia de suas vítimas. Num descuido, a conta cai, e você a agarra.</p><p>Você lembra do conto: quem engole a conta e olha para o céu ganha a sabedoria do céu. Quem olha para a terra ganha só a da terra.</p>`,
+      fx:{mac:1}, next:`N4cq`},
+    N4cq: {type:`quiz`, st:5, title:`Céu ou terra`,
+      ask:`A gumiho grita para confundir você. Engula a conta e toque no traço do céu.`,
+      opts:[{t:`ㆍ`, ok:1}, {t:`ㅡ`}, {t:`ㅣ`}], learn:[`cheon`],
+      okText:`Você olha para cima. Por um instante, entende o desenho de todas as vogais de uma vez. A gumiho uiva e foge. O erro virou triunfo.`,
+      okFx:{flu:12, flag:`ceu`},
+      failText:`Você olha para o chão. A sabedoria que vem é só da terra, e a gumiho amarra você com um fio vermelho.`,
+      lesson:{g:`ㆍ・ㅡ`, r:`céu · terra`, m:`O ponto é o céu. A linha deitada é a terra.`},
+      next:`M1`, fail:`ALT1`},
+    ALT1: {type:`story`, err:true, title:`Cativo da Gumiho`,
+      text:`<p>Nos contos, a gumiho precisa devorar cem fígados humanos para virar mulher de verdade. Mas esta parece entediada. "Fígado de quem não sabe ler é amargo", ela diz. "Vamos jogar."</p><p>Ela desenha uma forma no chão. "Sejong desenhou as consoantes pela forma da boca. Esta é a raiz da língua fechando a garganta: ㄱ, som de g, ou k."</p>`,
+      show:[{g:`ㄱ`, r:`g / k`, say:`가`, m:`A raiz da língua sobe e fecha a garganta.`}],
+      learn:[`cg`], next:`ALT2`},
+    ALT2: {type:`quiz`, err:true, title:`O enigma da raposa`,
+      ask:`"Qual destas é a raiz da língua fechando a garganta?"`,
+      opts:[{t:`ㄱ`, ok:1}, {t:`ㄴ`}, {t:`ㅁ`}], learn:[`cg`],
+      okText:`A gumiho ri, desamarra o fio e decide seguir você de longe: uma aliada instável. Vocês chegam direto ao cais, sem passar pelo ritual de purificação.`,
+      okFx:{ally:`gumiho`},
+      failText:`Ela suspira e solta você mesmo assim. Você chega ao cais sem passar pelo ritual de purificação, com o fio vermelho ainda no pulso.`,
+      lesson:{g:`ㄱ`, r:`g / k`, m:`A primeira consoante: a forma da raiz da língua.`},
+      next:`H0`, fail:`H0`},
+    M1: {type:`purify`, st:6, title:`O gut da mudang`,
+      text:`<p>Todos os caminhos descem até uma clareira com bandeiras de cinco cores. Uma <em>mudang</em>, xamã de roupas coloridas, conduz um <em>gut</em>, o rito que liga vivos e mortos, ao som do tambor <em>janggu</em>. Ela dança o <em>salpuri</em>, a dança que desfaz o <em>sal</em>, a energia nefasta, e solta o han.</p><p>A cada resposta certa, um nó de han se desata. Os erros aqui não pesam: só não desatam.</p>`,
+      n:4, max:2, next:`H0`},
+    H0: {type:`story`, st:7, cp:true, title:`O cais de Seo-gong`,
+      text:`<p>A mudang fala da primeira xamã: a princesa <em>Bari</em>, abandonada ao nascer, que mesmo assim desceu ao mundo dos mortos para buscar a água da vida e salvar os pais. "Você vai seguir o caminho dela. Mas, antes, precisa das consoantes."</p><p>Ela aponta para a própria boca. "Sejong desenhou cada uma pela forma da boca. Consoante mais vogal faz uma sílaba: ㄱ + ㅏ = 가."</p>`,
+      show:[{g:`ㄱ`, r:`g / k`, say:`가`, m:`A raiz da língua fecha a garganta.`}, {g:`ㄴ`, r:`n`, say:`나`, m:`A ponta da língua toca atrás dos dentes de cima.`}, {g:`ㅁ`, r:`m`, say:`마`, m:`A boca fechada, quadrada.`}],
+      learn:[`cg`, `cn`, `cm`], next:`H0g`},
+    H0g: {type:`gate`, go:`nojatdon`, yes:`H0pay`, no:`H0row`},
+    H0pay: {type:`story`, st:7, title:`A passagem`,
+      text:`<p>No cais, Seo-gong, o barqueiro velho, estende a mão sem olhar para você. Você paga com o nojatdon de Gangnim. "Pelo menos alguém lembrou da passagem", ele resmunga.</p><p>Mesmo assim, ele quer ver se você sabe ler antes de soltar o barco.</p>`,
+      fx:{lose:`nojatdon`}, next:`H1q`},
+    H0row: {type:`story`, st:7, title:`Sem passagem`,
+      text:`<p>No cais, Seo-gong, o barqueiro velho, estende a mão. Você não tem moedas. "Sem nojatdon, você rema", ele diz, e joga um remo pesado no seu colo.</p><p>Enquanto você rema, ele risca sílabas na madeira do barco.</p>`,
+      fx:{hp:-10}, next:`H1q`},
+    H1q: {type:`quiz`, st:8, title:`Sílabas na madeira`,
+      speaker:`Seo-gong risca`, line:`ㄱ + ㅏ`,
+      ask:`O que se forma?`,
+      opts:[{t:`가`, ok:1}, {t:`고`}, {t:`나`}], learn:[`ga`, `cg`],
+      okText:`"Bom. Vogal em pé vai do lado."`,
+      failText:`Seo-gong bate o remo na água. O barco balança.`,
+      lesson:{g:`가`, r:`ga`, m:`ㄱ + ㅏ. Vogais em pé (ㅏ ㅓ ㅣ) ficam à direita da consoante.`},
+      next:`H1q2`, fail:`H1e`},
+    H1q2: {type:`quiz`, st:8, title:`Vogal deitada`,
+      speaker:`Seo-gong risca`, line:`ㄱ + ㅗ`,
+      ask:`E agora?`,
+      opts:[{t:`고`, ok:1}, {t:`거`}, {t:`구`}], learn:[`go`],
+      okText:`"E vogal deitada vai embaixo." Ele solta as amarras, e o barco desliza sozinho.`,
+      failText:`Seo-gong bate o remo na água. Algo responde lá de baixo.`,
+      lesson:{g:`고`, r:`go`, m:`ㄱ + ㅗ. Vogais deitadas (ㅗ ㅜ ㅡ) ficam embaixo da consoante.`},
+      next:`H2`, fail:`H1e`},
+    H1e: {type:`quiz`, err:true, title:`O barco balança`, hear:`구`, hr:`gu`,
+      text:`<p>Mãos brancas surgem dos dois lados do barco. Mul-gwishin, dezenas delas. Seo-gong grita uma sílaba para espantá-las, e manda você repetir.</p>`,
+      ask:`Que sílaba ele gritou?`,
+      opts:[{t:`구`, ok:1}, {t:`고`}, {t:`누`}], learn:[`gu`],
+      okText:`As mãos afundam. Seo-gong cospe na água e volta a remar.`,
+      failText:`Uma das mãos arranha sua perna antes de soltar.`,
+      lesson:{g:`구・고`, r:`gu · go`, m:`ㄱ + ㅜ = 구. ㄱ + ㅗ = 고. O lado do ponto decide.`},
+      next:`H2`, fail:`H2`},
+    H2: {type:`quiz`, st:9, title:`A árvore guardiã`, hear:`나무`, hr:`namu`,
+      text:`<p>Na outra margem há uma árvore imensa, coberta de tiras de pano de cinco cores: uma <em>dangsan namu</em>, a árvore que guarda a aldeia. Há uma placa pregada ao pé dela.</p>`,
+      speaker:`A placa`, line:`나무`, roma:`namu`, plain:true,
+      ask:`O que diz a placa?`,
+      opts:[{t:`árvore`, ok:1}, {t:`mãe`}, {t:`quem`}], learn:[`w_namu`, `mu`, `cn`],
+      okText:`Você amarra uma tira de pano num galho. O vento responde, e o caminho se ilumina.`,
+      failText:`As folhas da árvore se fecham como punhos.`,
+      lesson:{g:`나무`, r:`namu`, m:`Árvore. 나 = ㄴ + ㅏ. 무 = ㅁ + ㅜ (vogal deitada, embaixo).`},
+      next:`H3`, fail:`H2e`},
+    H2e: {type:`build`, err:true, title:`A árvore ofendida`, hear:`나무`, hr:`namu`,
+      text:`<p>Para acalmar o espírito da árvore, você precisa escrever o nome dela numa tira de pano e amarrá-la no galho.</p>`,
+      ask:`Monte "namu", árvore, com as sílabas.`,
+      target:[`나`, `무`], pool:[`나`, `너`, `무`, `모`], learn:[`w_namu`, `mu`],
+      okText:`As folhas se abrem de novo.`,
+      failText:`A árvore deixa você passar, mas um galho bate nas suas costas.`,
+      lesson:{g:`나무`, r:`namu`, m:`나 (na) + 무 (mu).`},
+      next:`H3`, fail:`H3`},
+    H3: {type:`story`, st:10, title:`Três trilhas`,
+      text:`<p>Antes de partir, a mudang deu dois conselhos. "Siga sempre a trilha das árvores. E, se a escuridão crescer na sua frente, olhe para baixo e recite as vogais. Nunca a encare."</p><p>Na mata, três placas quase iguais apontam para três trilhas.</p>`,
+      next:`H3q`},
+    H3q: {type:`quiz`, st:10, title:`A trilha das árvores`,
+      ask:`Qual placa é a trilha das árvores?`,
+      opts:[{t:`나무`, ok:1, go:`H4`, res:`A trilha das árvores. Os troncos se alinham como uma escolta.`}, {t:`너무`, go:`H3e`}, {t:`누구`, go:`H3e`}],
+      learn:[`w_namu`, `w_neomu`, `w_nugu`],
+      failText:`Você segue a placa errada. A escuridão à frente parece maior a cada passo.`,
+      lesson:{g:`나무・너무・누구`, r:`namu · neomu · nugu`, m:`Árvore, demais, quem. Uma vogal muda tudo: ㅏ, ㅓ, ㅜ.`}},
+    H3e: {type:`quiz`, err:true, title:`O eoduksini`, dmg:20,
+      text:`<p>Uma sombra à frente cresce cada vez que você olha para ela: um <em>eoduksini</em>, o espírito da escuridão que se alimenta do medo. Quanto mais você o encara, maior ele fica.</p>`,
+      ask:`O que você faz?`, plain:true,
+      opts:[{t:`Olhar para baixo e recitar as vogais com calma`, ok:1}, {t:`Encará-lo até ele recuar`}, {t:`Correr para dentro da escuridão`}],
+      okText:`Você baixa os olhos e recita: 아, 어, 오, 우, 이. A sombra encolhe até virar a sombra de uma pedra.`,
+      failText:`Você o encara. Ele cresce até cobrir o céu, e você só escapa rastejando de olhos fechados.`,
+      lesson:{g:`아 어 오 우 이`, r:`a · eo · o · u · i`, m:`A recitação da mudang. Nos contos, o eoduksini encolhe diante de quem não o teme.`},
+      next:`H4`, fail:`H4`},
+    H4: {type:`build`, st:11, title:`A voz que chama`, hear:`어머니`, hr:`eo-meo-ni`,
+      text:`<p>Na trilha, você ouve alguém chamando seu nome, longe, abafado, como se viesse de cima da terra. É uma voz de mulher chorando, com um tambor de gut ao fundo.</p><p>Não é um fantasma. É alguém no mundo dos vivos, fazendo um rito por você. Você quer responder com a palavra que se diz a ela: eo-meo-ni.</p>`,
+      ask:`Monte a palavra que você ouviu.`,
+      target:[`어`, `머`, `니`], pool:[`어`, `아`, `머`, `마`, `니`], learn:[`w_eomeoni`, `meo`, `cm`],
+      okText:`A palavra sai inteira. Lá em cima, o tambor para por um instante, como se tivessem ouvido. O han no seu peito afrouxa.`,
+      okFx:{mac:-1, flag:`mae`},
+      failText:`A palavra sai torta. A voz continua chamando, sem ouvir você.`,
+      lesson:{g:`어머니`, r:`eomeoni`, m:`Mãe. 어 (eo) + 머 (ㅁ + ㅓ) + 니 (ㄴ + ㅣ).`},
+      next:`H5`, fail:`H4e`},
+    H4e: {type:`quiz`, err:true, title:`A voz se cala`,
+      speaker:`A voz`, line:`어머니`, roma:`eomeoni`, plain:true,
+      ask:`O que quer dizer a palavra que você não conseguiu escrever?`,
+      opts:[{t:`mãe`, ok:1}, {t:`bebê`}, {t:`árvore`}], learn:[`w_eomeoni`],
+      okText:`Você entende, tarde. Guarda a palavra para quando puder voltar.`,
+      failText:`Você acha que é outro fantasma e foge da voz. Ela se cala.`,
+      next:`H5`, fail:`H5`},
+    H5: {type:`quiz`, st:12, title:`O registro`, hear:`누구`, hr:`nugu`,
+      text:`<p>No fim da trilha, uma mesa de pedra. Gangnim espera com o myeongbu aberto. A linha do seu nome está borrada, e ao lado dela há uma pergunta: 누구? "Quem?"</p><p>"O registro quer saber quem você é", diz Gangnim. "Responda com a palavra certa: eu."</p>`,
+      ask:`Qual palavra quer dizer "eu"?`,
+      opts:[{t:`나`, ok:1}, {t:`너`}, {t:`누구`}], learn:[`w_na`, `w_neo`, `w_nugu`],
+      okText:`A tinta se mexe sozinha. A linha do seu nome volta a ter forma: ainda não toda, mas o começo.`,
+      failText:`A tinta se mexe... e o nome que aparece no registro é o do próprio Gangnim. Ele fica pálido, se é que um ceifador pode ficar mais pálido.`,
+      lesson:{g:`나・너`, r:`na · neo`, m:`나 = eu. 너 = você. Ambos informais. Só muda o lado do ponto.`},
+      next:`H6`, fail:`H5e`},
+    H5e: {type:`quiz`, err:true, title:`O ceifador furioso`,
+      text:`<p>Gangnim raspa o próprio nome do registro com a unha, furioso. "Mais uma chance."</p>`,
+      speaker:`Gangnim`, line:`나`, roma:`na`, plain:true,
+      ask:`"O que é 나?"`,
+      opts:[{t:`eu`, ok:1}, {t:`você`}, {t:`quem`}], learn:[`w_na`],
+      okText:`Você acerta. Gangnim corrige o registro resmungando. Ele não vai esquecer isso tão cedo.`,
+      okFx:{flag:`gangnim_irritado`},
+      failText:`Gangnim corrige o registro ele mesmo, sem paciência. "Aprenda até a próxima vez."`,
+      failFx:{flag:`gangnim_irritado`},
+      next:`H6`, fail:`H6`},
+    H6: {type:`speak`, st:12, title:`Quarenta e nove dias`,
+      text:`<p>Gangnim fecha o registro. "A alma tem 49 dias até o julgamento final. É por isso que os vivos fazem o rito do 49º dia. É o seu prazo para reescrever o nome inteiro e voltar."</p><p>Antes de partir, recite o que aprendeu. Ouça, repita em voz alta e avalie com sinceridade.</p>`,
+      lines:[{g:`아 어 오 우 이`, r:`a eo o u i`}, {g:`가 나 마`, r:`ga na ma`}, {g:`나무`, r:`namu`}, {g:`어머니`, r:`eomeoni`}],
+      after:`Na capa do registro, ao lado do seu nome borrado, aparece um número escrito em tinta vermelha: 49.`,
+      fx:{item:`prazo49`}, next:`END`},
+    END: {type:`end`},
+    BAD: {type:`bad`, title:`Final ruim · Esquecido pelo Registro`,
+      text:`<p>O han transborda. Seu nome escorre do myeongbu como tinta na chuva.</p><p>Sem nome, você não pode ser levado nem devolvido. Você se torna um <em>gwishin</em>, um fantasma preso à margem do rio, esperando que alguém, algum dia, lembre de você.</p>`}
+  }
+};
+
+</script>
+<script>
+// ===== Kagami Geoul · motor do piloto =====
+const KEY = 'kagami-geoul-save';
+const SAVE_V = 1;
+const MAX_MAC = 5;
+const ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06A9 9 0 0 0 14 3.23z"/></svg>';
+const $ = s => document.querySelector(s);
+const app = $('#app'), drawer = $('#drawer');
+const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+// ---------- Salvamento ----------
+let memSave = null;
+function blankSave(){ return {v:SAVE_V, set:{roma:true, rate:0.85}, p:{jp:null, kr:null}}; }
+function loadSave(){
+  try { const s = localStorage.getItem(KEY); if (s) { const o = JSON.parse(s); if (o && o.v === SAVE_V && o.p) return o; } } catch(e) {}
+  return memSave || blankSave();
+}
+function persist(){ memSave = SAVE; try { localStorage.setItem(KEY, JSON.stringify(SAVE)); } catch(e) {} }
+let SAVE = loadSave();
+let cur = null, P = null;
+const W = () => STORY[cur];
+
+function newProfile(lang){
+  return {lang, ch:1, node:'P0', hp:100, mac:0, streak:0, flu:0, items:[], allies:[], flags:{},
+    learned:{}, voice:[], visited:[], cp:null, endings:[], done:[], review:null, weak:[], started:Date.now()};
+}
+function snapshot(){ const c = JSON.parse(JSON.stringify(P)); delete c.cp; return c; }
+
+// ---------- Voz ----------
+let voices = [];
+function loadVoices(){ try { voices = speechSynthesis.getVoices() || []; } catch(e) { voices = []; } }
+if ('speechSynthesis' in window) { loadVoices(); try { speechSynthesis.onvoiceschanged = loadVoices; } catch(e) {} }
+// No app instalado (Android), a voz usa o motor nativo do aparelho pelo plugin TextToSpeech.
+// No navegador, usa a Web Speech API.
+const CAP = window.Capacitor;
+const IS_NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
+const NTTS = IS_NATIVE ? ((CAP.Plugins && CAP.Plugins.TextToSpeech) || (CAP.registerPlugin && CAP.registerPlugin('TextToSpeech'))) : null;
+const LANG_TTS = {jp:'ja-JP', kr:'ko-KR'};
+function voiceFor(code){ const c = (code || W().tts).slice(0,2).toLowerCase(); return voices.find(v => (v.lang||'').toLowerCase().replace('_','-').startsWith(c)); }
+function sayIn(t, lang){
+  if (!t) return;
+  if (NTTS) { try { NTTS.stop().catch(() => {}); NTTS.speak({text:t, lang, rate:SAVE.set.rate, pitch:1, volume:1, category:'playback'}).catch(() => {}); } catch(e) {} return; }
+  try {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t); u.lang = lang; u.rate = SAVE.set.rate;
+    const v = voiceFor(lang); if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch(e) {}
+}
+function say(t){ sayIn(t, W().tts); }
+async function hasVoice(lang){
+  if (NTTS) { try { const r = await NTTS.isLanguageSupported({lang}); return !!(r && r.supported); } catch(e) { return false; } }
+  if (!('speechSynthesis' in window)) return false;
+  loadVoices(); return !!voiceFor(lang);
+}
+const playBtn = (t, label, sm) => `<button class="play${sm?' sm':''}" data-say="${esc(t)}">${ICON}<span>${label||'Ouvir'}</span></button>`;
+function wirePlay(root){ root.querySelectorAll('[data-say]').forEach(b => b.onclick = e => { e.stopPropagation(); say(b.dataset.say); }); }
+
+// ---------- Efeitos e estado ----------
+function fx(f){
+  if (!f) return;
+  if (f.hp) P.hp = Math.max(0, Math.min(100, P.hp + f.hp));
+  if (f.mac) P.mac = Math.max(0, P.mac + f.mac);
+  if (f.flu) P.flu = Math.min(100, P.flu + f.flu);
+  if (f.item && !P.items.includes(f.item)) P.items.push(f.item);
+  if (f.ally && !P.allies.includes(f.ally)) P.allies.push(f.ally);
+  if (f.lose) P.items = P.items.filter(i => i !== f.lose);
+  if (f.flag) P.flags[f.flag] = true;
+}
+function learn(k, ok){
+  if (!W().lex[k]) return;
+  const e = P.learned[k] || (P.learned[k] = {r:0, w:0, s:null});
+  if (ok === true) e.r++; else if (ok === false) e.w++;
+}
+function faintCheck(){ if (P.hp <= 0) { P.hp = 35; return true; } return false; }
+
+// ---------- Navegação ----------
+function goto(id){
+  const L = W();
+  let n = L.nodes[id];
+  if (!n) { id = 'END'; n = L.nodes.END; }
+  P.node = id;
+  if (n.type === 'gate') { return goto(P.items.includes(n.go) ? n.yes : n.no); }
+  if (!P.visited.includes(id)) {
+    P.visited.push(id);
+    fx(n.fx);
+    if (n.type === 'story' && n.learn) n.learn.forEach(k => learn(k, null));
+  }
+  if (n.cp) P.cp = snapshot();
+  P._faint = faintCheck() || P._faint;
+  persist();
+  render();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function open(lang, fresh){
+  cur = lang;
+  if (fresh || !SAVE.p[lang]) SAVE.p[lang] = newProfile(lang);
+  P = SAVE.p[lang];
+  document.body.dataset.lang = lang;
+  persist();
+  if (P.visited.length === 0) goto(P.node); else render();
+}
+
+// ---------- Peças de interface ----------
+function hud(){
+  const L = W(), n = L.nodes[P.node] || {};
+  const st = n.st || (P.node === 'END' ? 12 : '·');
+  const chips = [
+    ...P.items.map(i => `<span class="chip${i === L.ward ? ' ward' : ''}">${esc(L.items[i] || i)}</span>`),
+    ...P.allies.map(a => `<span class="chip ally">${esc(L.allies[a] || a)}</span>`)
+  ].join('');
+  return `<header class="hud">
+    <div class="hud-top">
+      <button class="ghost" data-act="menu">Menu</button>
+      <span class="where">Cap. I · ${esc(L.ch1)} · etapa ${st}/12</span>
+      <button class="ghost" data-act="grim">Grimório</button>
+    </div>
+    <div class="meters">
+      <div class="meter"><div class="top"><span class="label">Vida</span><span class="v">${P.hp}</span></div><div class="bar"><i style="width:${P.hp}%"></i></div></div>
+      <div class="meter"><div class="top"><span class="label">Mácula <span class="${L.cls}">${L.mac}</span></span><span class="v">${Math.min(P.mac, MAX_MAC)}/${MAX_MAC}</span></div>
+        <div class="pips">${Array.from({length:MAX_MAC}, (_, i) => `<i class="${i < P.mac ? 'on' : ''}"></i>`).join('')}</div></div>
+      <div class="meter"><div class="top"><span class="label">Fluência</span><span class="v">${P.flu}%</span></div><div class="bar flu"><i style="width:${P.flu}%"></i></div></div>
+    </div>
+    ${chips ? `<div class="inv">${chips}</div>` : ''}
+  </header>`;
+}
+function wireHud(){
+  app.querySelectorAll('[data-act="menu"]').forEach(b => b.onclick = () => title());
+  app.querySelectorAll('[data-act="grim"]').forEach(b => b.onclick = () => grimoire());
+}
+function head(n){
+  const tag = n.err ? 'Rota alternativa' : (n.type === 'purify' ? 'Purificação' : 'Capítulo I');
+  return `<div class="head"><span class="label">${tag}</span><h2>${esc(n.title || '')}</h2></div>`;
+}
+function showCards(arr){
+  if (!arr) return '';
+  const c = W().cls;
+  return `<div class="show">${arr.map(s => `<button class="glyph" data-say="${esc(s.say || s.g)}"><span class="g ${c}">${esc(s.g)}</span><span class="r">${esc(s.r)}</span>${s.m ? `<span class="m">${esc(s.m)}</span>` : ''}</button>`).join('')}</div>`;
+}
+function voiceLine(n){
+  if (!n.line) return '';
+  const ro = n.roma && SAVE.set.roma ? `<span class="ro">${esc(n.roma)}</span>` : '';
+  return `<div class="voice">${n.speaker ? `<span class="who">${esc(n.speaker)}</span>` : ''}<span class="line ${W().cls}">${esc(n.line)}</span>${ro}</div>`;
+}
+function listenBlock(n){
+  if (!n.hear) return '';
+  return `<div class="listen">${playBtn(n.hear, 'Ouvir')}${n.hr ? `<button class="reveal" data-reveal="${esc(n.hr)}">Não consigo ouvir</button>` : ''}</div>`;
+}
+function wireReveal(root){
+  root.querySelectorAll('[data-reveal]').forEach(b => b.onclick = () => { b.outerHTML = `<span class="label">O som é: ${esc(b.dataset.reveal)}</span>`; });
+}
+function lessonBox(l){
+  if (!l) return '';
+  return `<div class="lesson"><span class="label">Fragmento do grimório</span><span class="lg ${W().cls}">${esc(l.g)}</span>${l.r ? `<span class="lr">${esc(l.r)}</span>` : ''}<p>${esc(l.m)}</p></div>`;
+}
+
+// ---------- Render principal ----------
+function render(){
+  const n = W().nodes[P.node];
+  if (n.type === 'end') return renderEnd();
+  if (n.type === 'bad') return renderBad(n);
+  let body = '';
+  if (n.type === 'story') body = renderStory(n);
+  else if (n.type === 'quiz') body = renderQuiz(n);
+  else if (n.type === 'choice') body = renderChoice(n);
+  else if (n.type === 'build') body = renderBuild(n);
+  else if (n.type === 'trace') body = renderTrace(n);
+  else if (n.type === 'speak') body = renderSpeak(n);
+  else if (n.type === 'purify') body = renderPurify(n);
+  app.innerHTML = hud() + `<article class="scene${n.err ? ' err' : ''}">${head(n)}${body}<div id="out"></div></article>`;
+  wireHud(); wirePlay(app); wireReveal(app);
+  const w = wiring[n.type]; if (w) w(n);
+  if (P._faint) {
+    P._faint = false; persist();
+    const o = $('#out'); if (o && !o.innerHTML) o.insertAdjacentHTML('beforebegin', `<p class="note doom">Você desmaiou e acordou mais adiante, com o corpo moído. A vida voltou para 35.</p>`);
+  }
+  if (n.hear && (n.type === 'quiz' || n.type === 'build')) setTimeout(() => say(n.hear), 350);
+}
+const wiring = {};
+
+function renderStory(n){
+  return `<div class="text">${n.text || ''}</div>${showCards(n.show)}${voiceLine(n)}<button class="btn" id="go">Continuar</button>`;
+}
+wiring.story = n => { $('#go').onclick = () => goto(n.next); };
+
+function optHTML(n, o, i){
+  const glyph = !n.plain;
+  return `<button class="opt${glyph ? '' : ' plain'}" data-i="${i}"><span class="k">${String.fromCharCode(65 + i)}</span><span class="t ${glyph ? W().cls : ''}">${esc(o.t)}</span></button>`;
+}
+function renderQuiz(n){
+  const opts = n.fixed ? n.opts.map((o, i) => [o, i]) : shuffle(n.opts.map((o, i) => [o, i]));
+  return `${n.text ? `<div class="text">${n.text}</div>` : ''}${voiceLine(n)}${listenBlock(n)}
+    <p class="ask">${esc(n.ask)}</p>
+    <div class="opts">${opts.map(([o, i]) => optHTML(n, o, i)).join('')}</div>`;
+}
+wiring.quiz = n => {
+  app.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    const o = n.opts[+b.dataset.i];
+    if (o.say) say(o.say);
+    app.querySelectorAll('.opt').forEach(x => {
+      x.disabled = true;
+      const ox = n.opts[+x.dataset.i];
+      if (ox.ok && !o.go) x.classList.add('right');
+    });
+    const ok = !!o.ok;
+    if (o.go && ok) b.classList.add('pick'); else if (ok) b.classList.add('right'); else b.classList.add('wrong');
+    if (!ok && o.go) app.querySelectorAll('.opt').forEach(x => { if (n.opts[+x.dataset.i].ok) x.classList.add('right'); });
+    resolve(n, ok, o);
+  });
+};
+
+function resolve(n, ok, opt){
+  let ward = false, cleanse = false;
+  if (ok) {
+    P.streak = 0;
+    P.run = (P.run || 0) + 1;
+    if (P.run >= 3 && P.mac > 0) { P.mac--; P.run = 0; cleanse = true; }
+    P.flu = Math.min(100, P.flu + (n.flu ?? 6));
+    fx(n.okFx);
+  } else {
+    const w = W().ward;
+    P.run = 0;
+    if (P.items.includes(w)) { P.items = P.items.filter(i => i !== w); ward = true; }
+    else { P.streak++; P.mac += P.streak; P.hp = Math.max(0, P.hp - (n.dmg ?? 15)); }
+    fx(n.failFx);
+  }
+  if (opt && opt.fx) fx(opt.fx);
+  (n.learn || []).forEach(k => learn(k, ok));
+  let next = (opt && opt.go) || (ok ? n.next : n.fail) || n.next;
+  let doom = false;
+  if (!ok && !ward && (P.mac >= MAX_MAC || P.streak >= 3)) { next = 'BAD'; doom = true; }
+  const faint = faintCheck();
+  P.node = next;
+  persist();
+  const L = W();
+  const text = ok ? ((opt && opt.res) || n.okText) : n.failText;
+  const isChoice = opt && opt.go && ok;
+  app.querySelector('.hud').outerHTML = hud(); wireHud();
+  const out = $('#out');
+  out.innerHTML = `<div class="out">
+    <p class="fate ${isChoice ? 'neutral' : ok ? 'good' : 'bad'}"><b>${isChoice ? 'VOCÊ ESCOLHEU' : ok ? 'A PALAVRA PROTEGE VOCÊ' : 'A PALAVRA FERE VOCÊ'}</b>${esc(text || '')}</p>
+    ${cleanse ? `<p class="note">Três acertos seguidos: a palavra certa purifica. A mácula recua um ponto.</p>` : ''}
+    ${ward ? `<p class="note">O ${esc(L.items[L.ward].split(' (')[0])} se desfaz e absorve o erro: sem mácula, sem dano. A história, porém, segue pelo caminho do erro.</p>` : ''}
+    ${!ok && !ward && !doom && P.streak === 2 ? `<p class="note doom">Dois erros seguidos. Mais um e a mácula leva você para o abismo.</p>` : ''}
+    ${doom ? `<p class="note doom">A mácula transborda. ${P.streak >= 3 ? 'Três erros seguidos.' : `${L.mac} no limite.`}</p>` : ''}
+    ${faint ? `<p class="note doom">Você desmaia e acorda mais adiante, com o corpo moído. A vida volta para 35.</p>` : ''}
+    ${lessonBox(n.lesson)}
+    <button class="btn" id="go">Seguir</button></div>`;
+  $('#go').onclick = () => goto(next);
+  $('#go').focus({preventScroll:true});
+  out.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function renderChoice(n){
+  return `<div class="text">${n.text || ''}</div><p class="ask">O que você faz?</p>
+    <div class="opts">${n.opts.map((o, i) => `<button class="opt plain" data-i="${i}"><span class="k">${String.fromCharCode(65 + i)}</span><span class="t">${esc(o.t)}</span></button>`).join('')}</div>`;
+}
+wiring.choice = n => {
+  app.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    const o = n.opts[+b.dataset.i];
+    app.querySelectorAll('.opt').forEach(x => x.disabled = true); b.classList.add('pick');
+    fx(o.fx); const faint = faintCheck();
+    P.node = o.go; persist();
+    app.querySelector('.hud').outerHTML = hud(); wireHud();
+    $('#out').innerHTML = `<div class="out"><p class="fate neutral"><b>VOCÊ ESCOLHEU</b>${esc(o.res || '')}</p>
+      ${faint ? `<p class="note doom">Você desmaia e acorda mais adiante, com o corpo moído. A vida volta para 35.</p>` : ''}
+      <button class="btn" id="go">Seguir</button></div>`;
+    $('#go').onclick = () => goto(o.go);
+  });
+};
+
+// Montar palavras / ordenar
+let buildState = null;
+function renderBuild(n){
+  buildState = {pool: shuffle(n.pool.map((t, i) => ({t, i}))), picked: []};
+  return `<div class="text">${n.text || ''}</div>${listenBlock(n)}<p class="ask">${esc(n.ask)}</p>
+    <div class="slots" id="slots"></div><div class="pool" id="pool"></div>
+    <div class="row"><button class="ghost" id="undo">Desfazer</button></div>`;
+}
+function drawBuild(n){
+  const c = W().cls;
+  $('#slots').innerHTML = n.target.map((_, i) => { const p = buildState.picked[i]; return `<span class="slot ${c}${p ? ' f' : ''}">${p ? esc(p.t) : ''}</span>`; }).join('');
+  $('#pool').innerHTML = buildState.pool.map(p => `<button class="tile ${c}" data-i="${p.i}" ${buildState.picked.includes(p) ? 'disabled' : ''}>${esc(p.t)}</button>`).join('');
+  app.querySelectorAll('.tile').forEach(b => b.onclick = () => {
+    const p = buildState.pool.find(x => x.i === +b.dataset.i);
+    buildState.picked.push(p); drawBuild(n);
+    if (buildState.picked.length === n.target.length) {
+      const ok = buildState.picked.every((x, i) => x.t === n.target[i]);
+      app.querySelectorAll('.slot').forEach((s, i) => s.classList.add(buildState.picked[i].t === n.target[i] ? 'okk' : 'bad'));
+      app.querySelectorAll('.tile,#undo').forEach(x => x.disabled = true);
+      resolve(n, ok, null);
+    }
+  });
+}
+wiring.build = n => {
+  drawBuild(n);
+  $('#undo').onclick = () => { buildState.picked.pop(); drawBuild(n); };
+};
+
+// Traçar com autoavaliação
+const SELF = [['igual', 'Saiu igual'], ['quase', 'Quase'], ['treinar', 'Preciso treinar']];
+function selfButtons(){ return `<div class="selfeval"><span class="label">Como saiu?</span><div class="row">${SELF.map(([k, t]) => `<button class="ghost" data-self="${k}">${t}</button>`).join('')}</div></div>`; }
+function renderTrace(n){
+  return `<div class="text">${n.text}</div>
+    <div class="trace" id="tracebox"><div class="model ${W().cls}">${esc(n.glyph)}</div><canvas id="cv"></canvas></div>
+    <div class="row"><button class="ghost" id="clear">Limpar</button>${playBtn(n.glyph, 'Ouvir', true)}</div>${selfButtons()}`;
+}
+wiring.trace = n => {
+  const cv = $('#cv'), box = $('#tracebox'), dpr = window.devicePixelRatio || 1;
+  const ctx = cv.getContext && cv.getContext('2d');
+  if (!ctx) { wireSelf(n, k => { if (n.key) { learn(n.key, null); P.learned[n.key].s = k; } }); return; }
+  const size = () => { const r = box.getBoundingClientRect(); cv.width = r.width * dpr; cv.height = r.height * dpr; const x = ctx; x.scale(dpr, dpr); x.lineCap = 'round'; x.lineJoin = 'round'; x.lineWidth = Math.max(6, r.width / 32); x.strokeStyle = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#c98a5c'; };
+  size();
+  let drawing = false;
+  const pt = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  cv.onpointerdown = e => { drawing = true; try { cv.setPointerCapture(e.pointerId); } catch(_) {} const [x, y] = pt(e); ctx.beginPath(); ctx.moveTo(x, y); };
+  cv.onpointermove = e => { if (!drawing) return; const [x, y] = pt(e); ctx.lineTo(x, y); ctx.stroke(); };
+  cv.onpointerup = cv.onpointercancel = () => { drawing = false; };
+  $('#clear').onclick = () => { ctx.clearRect(0, 0, cv.width, cv.height); };
+  wireSelf(n, k => { if (n.key) { learn(n.key, null); P.learned[n.key].s = k; } });
+};
+function wireSelf(n, onRate){
+  app.querySelectorAll('[data-self]').forEach(b => b.onclick = () => {
+    const k = b.dataset.self;
+    app.querySelectorAll('[data-self]').forEach(x => x.disabled = true); b.classList.add('pick'); b.style.borderColor = 'var(--accent)'; b.style.color = 'var(--bone)';
+    onRate(k);
+    P.voice.push({node:P.node, rate:k});
+    P.node = n.next; persist();
+    $('#out').innerHTML = `<div class="out">${n.after ? `<p class="fate neutral"><b>${k === 'treinar' ? 'ANOTADO PARA REVISÃO' : 'REGISTRADO'}</b>${esc(n.after)}</p>` : `<p class="note">${k === 'treinar' ? 'Anotado. Isso volta na revisão do capítulo.' : 'Registrado.'}</p>`}<button class="btn" id="go">Seguir</button></div>`;
+    app.querySelector('.hud').outerHTML = hud(); wireHud();
+    $('#go').onclick = () => goto(n.next);
+  });
+}
+
+// Fala com autoavaliação
+function renderSpeak(n){
+  const c = W().cls;
+  return `<div class="text">${n.text}</div>
+    <div class="opts">${n.lines.map(l => `<div class="opt plain" style="justify-content:space-between;flex-wrap:wrap"><span><span class="t ${c}" style="font-size:26px">${esc(l.g)}</span>${SAVE.set.roma ? ` <span class="label" style="text-transform:none;letter-spacing:.04em">${esc(l.r)}</span>` : ''}</span>${playBtn(l.g, 'Ouvir', true)}</div>`).join('')}</div>
+    <p class="ask">Ouça cada linha, repita em voz alta e compare.</p>${selfButtons()}`;
+}
+wiring.speak = n => { wireSelf(n, () => {}); };
+
+// Perguntas de revisão (purificação e história extra)
+function makeQs(count){
+  const lex = W().lex;
+  let keys = Object.keys(P.learned).filter(k => lex[k]);
+  if (keys.length < 4) keys = Object.keys(lex).slice(0, 10);
+  const weak = keys.filter(k => P.learned[k] && (P.learned[k].w > 0 || P.learned[k].s === 'treinar'));
+  let pick = shuffle(weak).slice(0, Math.ceil(count / 2));
+  pick = pick.concat(shuffle(keys.filter(k => !pick.includes(k)))).slice(0, count);
+  while (pick.length < count) pick.push(keys[Math.floor(Math.random() * keys.length)]);
+  return shuffle(pick).map(k => {
+    const it = lex[k], same = Object.keys(lex).filter(x => x !== k && lex[x].t === it.t);
+    let mode = it.t === 'm' ? 'mean' : (Math.random() < .5 ? 'sound' : 'hear');
+    const field = mode === 'mean' ? 'm' : mode === 'sound' ? 'r' : 'g';
+    const seen = new Set([it[field]]); const wrong = [];
+    for (const x of shuffle(same)) { const v = lex[x][field]; if (!seen.has(v)) { seen.add(v); wrong.push(v); } if (wrong.length === 2) break; }
+    const opts = shuffle([{t:it[field], ok:true}, ...wrong.map(t => ({t}))]);
+    return {k, mode, it, opts,
+      ask: mode === 'mean' ? 'O que significa?' : mode === 'sound' ? 'Que som tem?' : 'Ouça. Qual é?',
+      plain: mode !== 'hear'};
+  });
+}
+function qHTML(q){
+  const c = W().cls;
+  const top = q.mode === 'hear'
+    ? `<div class="listen">${playBtn(q.it.say || q.it.g, 'Ouvir')}<button class="reveal" data-reveal="${esc(q.it.r)}">Não consigo ouvir</button></div>`
+    : `<div class="voice"><span class="line ${c}">${esc(q.it.g)}</span>${q.mode === 'mean' && SAVE.set.roma ? `<span class="ro">${esc(q.it.r)}</span>` : ''}</div>`;
+  return `${top}<p class="ask">${q.ask}</p><div class="opts">${q.opts.map((o, i) => `<button class="opt${q.plain ? ' plain' : ''}" data-i="${i}"><span class="k">${String.fromCharCode(65 + i)}</span><span class="t ${q.plain ? '' : c}">${esc(o.t)}</span></button>`).join('')}</div>`;
+}
+function runQs(container, qs, onAnswer, onDone){
+  let i = 0;
+  const step = () => {
+    if (i >= qs.length) return onDone();
+    const q = qs[i];
+    container.innerHTML = `<span class="label">Pergunta ${i + 1} de ${qs.length}</span>` + qHTML(q);
+    wirePlay(container); wireReveal(container);
+    if (q.mode === 'hear') setTimeout(() => say(q.it.say || q.it.g), 300);
+    container.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+      const o = q.opts[+b.dataset.i];
+      container.querySelectorAll('.opt').forEach(x => { x.disabled = true; if (q.opts[+x.dataset.i].ok) x.classList.add('right'); });
+      if (!o.ok) b.classList.add('wrong');
+      learn(q.k, !!o.ok); onAnswer(!!o.ok, q);
+      const nx = document.createElement('div');
+      nx.innerHTML = `<p class="note" style="margin-top:10px"><span class="${W().cls}" style="font-size:20px;color:var(--bone)">${esc(q.it.g)}</span> · ${esc(q.it.r)}${q.it.m ? ' · ' + esc(q.it.m) : ''}</p><button class="btn" style="margin-top:10px">${i + 1 < qs.length ? 'Próxima' : 'Concluir'}</button>`;
+      container.appendChild(nx);
+      nx.querySelector('button').onclick = () => { i++; step(); };
+      nx.querySelector('button').focus({preventScroll:true});
+    });
+  };
+  step();
+}
+
+function renderPurify(n){
+  return `<div class="text">${n.text}</div><div class="track" id="track"></div><div id="qbox" style="display:grid;gap:14px"></div>`;
+}
+wiring.purify = n => {
+  const qs = makeQs(n.n); let reduced = 0, right = 0;
+  const track = () => { $('#track').innerHTML = Array.from({length:n.max}, (_, i) => `<i class="${i < reduced ? 'win' : ''}" title="mácula lavada"></i>`).join('') + `<span class="label" style="align-self:center;margin-left:6px">mácula lavada: ${reduced} de ${n.max}</span>`; };
+  track();
+  runQs($('#qbox'), qs, ok => {
+    if (ok) { right++; if (reduced < n.max && P.mac > 0) { P.mac--; reduced++; } P.streak = 0; }
+    persist(); app.querySelector('.hud').outerHTML = hud(); wireHud(); track();
+  }, () => {
+    P.node = n.next; persist();
+    $('#qbox').innerHTML = `<div class="out"><p class="fate good"><b>PURIFICAÇÃO CONCLUÍDA</b>${right} de ${qs.length} acertos. ${reduced ? `A água levou ${reduced} de mácula.` : (P.mac === 0 ? 'Não havia mácula para lavar.' : 'A mácula continua com você.')}</p><button class="btn" id="go">Seguir</button></div>`;
+    $('#go').onclick = () => goto(n.next);
+  });
+};
+
+// ---------- Finais ----------
+function renderBad(n){
+  const L = W();
+  if (!P.endings.includes('bad')) P.endings.push('bad');
+  persist();
+  app.innerHTML = hud() + `<article class="scene err">${head({title:n.title, err:true})}<div class="text">${n.text}</div>
+    <p class="note doom">Este é um final ruim, mas não é o fim da jornada. Você pode voltar ao último ponto de purificação. O mundo vai lembrar do que aconteceu.</p>
+    <div class="row"><button class="btn" id="back">Voltar ao último ponto seguro</button><button class="ghost" data-act="menu">Menu</button></div></article>`;
+  wireHud();
+  $('#back').onclick = () => {
+    const keep = {endings:P.endings.slice(), cp:P.cp, falls:(P.flags.falls || 0) + 1};
+    const base = P.cp ? JSON.parse(JSON.stringify(P.cp)) : newProfile(cur);
+    base.endings = keep.endings; base.cp = keep.cp; base.flags = Object.assign({}, base.flags, {yomi:true, falls:keep.falls});
+    base.hp = Math.max(base.hp, 60); base.streak = 0; base.mac = Math.min(base.mac, 2);
+    SAVE.p[cur] = P = base; persist(); render(); window.scrollTo({top:0});
+  };
+}
+function tierOf(){ return P.mac <= 1 ? 0 : P.mac <= 3 ? 1 : 2; }
+function renderEnd(){
+  const L = W(), t = tierOf();
+  if (!P.done.includes(1)) { P.done.push(1); P.ending1 = t; }
+  const end = 'c1-' + t; if (!P.endings.includes(end)) P.endings.push(end);
+  persist();
+  const learned = Object.keys(P.learned).length;
+  const rv = P.review;
+  app.innerHTML = hud() + `<article class="scene">
+    <div class="head"><span class="label">Fim do Capítulo I · ${esc(L.ch1)}</span><h2>${esc(L.tiers[t][0])}</h2></div>
+    <div class="text"><p>${esc(L.tiers[t][1])}</p></div>
+    <div class="stats">
+      <div class="stat"><span class="label">Vida</span><b>${P.hp}</b></div>
+      <div class="stat"><span class="label">Mácula</span><b>${P.mac}/${MAX_MAC}</b></div>
+      <div class="stat"><span class="label">Fluência</span><b>${P.flu}%</b></div>
+      <div class="stat"><span class="label">Grimório</span><b>${learned}</b></div>
+    </div>
+    ${P.allies.length ? `<p><span class="label">Aliados que lembram de você</span><br>${P.allies.map(a => esc(L.allies[a])).join(' · ')}</p>` : ''}
+    <div class="locked" style="border-color:var(--accent);color:var(--fg)"><span class="label">História extra · revisão</span><h3>${esc(L.review.name)}</h3>
+      <p style="font-size:15px">${rv ? `Última vez: ${rv.score} de 10 ${esc(L.review.unit)}. Você pode jogar de novo quando quiser.` : 'Revise tudo o que aprendeu no capítulo. O resultado muda o começo do Capítulo II.'}</p>
+      <button class="btn" id="rev">${rv ? 'Jogar de novo' : 'Começar'}</button></div>
+    <div class="locked"><span class="label">Próximo</span><h3>Capítulo II · em breve</h3><p style="font-size:15px">${esc(L.next)}</p><p style="font-size:14px">Seu progresso, aliados, itens, mácula e grimório ficam salvos e passam para o próximo capítulo.</p></div>
+    <div class="row"><button class="ghost" data-act="menu">Menu</button><button class="ghost" data-act="grim">Grimório</button></div>
+  </article>`;
+  wireHud();
+  $('#rev').onclick = () => renderReview();
+}
+function renderReview(){
+  const L = W(), R = L.review, qs = makeQs(10);
+  let score = 0; const wrong = [];
+  app.innerHTML = hud() + `<article class="scene">
+    <div class="head"><span class="label">História extra · Capítulo I</span><h2>${esc(R.name)}</h2></div>
+    <div class="text"><p>${esc(R.intro)}</p></div>
+    <div class="track" id="track"></div><div id="qbox" style="display:grid;gap:14px"></div></article>`;
+  wireHud();
+  const jp = cur === 'jp';
+  const track = (done) => {
+    const misses = done - score;
+    $('#track').innerHTML = qs.map((_, i) => `<i class="${jp ? (i < score ? 'lit out' : 'lit') : (i < score ? 'win' : i < score + misses ? 'lose' : '')}"></i>`).join('')
+      + `<span class="label" style="align-self:center;margin-left:6px">${jp ? `velas apagadas: ${score} de 10` : `apostas ganhas: ${score} de 10`}</span>`;
+  };
+  let answered = 0; track(0);
+  runQs($('#qbox'), qs, (ok, q) => { answered++; if (ok) score++; else wrong.push(q.k); track(answered); }, () => {
+    const win = score >= 8;
+    P.review = {score, at:Date.now()};
+    P.weak = Array.from(new Set(wrong));
+    if (win) fx({item:R.reward});
+    persist();
+    $('#qbox').innerHTML = `<div class="out"><p class="fate ${win ? 'good' : 'bad'}"><b>${score} DE 10 ${esc(R.unit.toUpperCase())}</b>${esc(win ? R.win : R.lose)}</p>
+      ${!win && P.weak.length ? `<p class="note">Para o Capítulo II: ${P.weak.map(k => `<span class="${L.cls}">${esc(L.lex[k].g)}</span>`).join(' · ')}</p>` : ''}
+      <button class="btn" id="go">Voltar ao fim do capítulo</button></div>`;
+    app.querySelector('.hud').outerHTML = hud(); wireHud();
+    $('#go').onclick = () => { render(); window.scrollTo({top:0}); };
+  });
+}
+
+// ---------- Grimório ----------
+function grimoire(){
+  const L = W();
+  const keys = Object.keys(P.learned).filter(k => L.lex[k]);
+  const order = Object.keys(L.lex);
+  keys.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  const selfTxt = {igual:'traço: igual', quase:'traço: quase', treinar:'traço: treinar'};
+  drawer.innerHTML = `<div class="panel" role="dialog" aria-label="Grimório">
+    <div class="ph"><h2>Grimório</h2><button class="ghost" id="close">Fechar</button></div>
+    <p class="label">${keys.length} ${keys.length === 1 ? 'entrada' : 'entradas'} · toque para ouvir</p>
+    ${keys.length ? `<div class="glist">${keys.map(k => { const it = L.lex[k], e = P.learned[k]; return `<button class="gitem" data-say="${esc(it.say || it.g)}"><span class="g ${L.cls}">${esc(it.g)}</span><span class="r">${esc(it.r)}</span>${it.m ? `<span class="m">${esc(it.m)}</span>` : ''}<span class="sc">✓ ${e.r} · ✗ ${e.w}${e.s ? ' · ' + selfTxt[e.s] : ''}</span></button>`; }).join('')}</div>` : `<p class="empty">Vazio. Cada letra e palavra que você encontrar fica escrita aqui.</p>`}
+  </div>`;
+  drawer.hidden = false; wirePlay(drawer);
+  $('#close').onclick = closeDrawer; $('#close').focus();
+}
+function closeDrawer(){ drawer.hidden = true; drawer.innerHTML = ''; }
+drawer.addEventListener('click', e => { if (e.target === drawer) closeDrawer(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !drawer.hidden) closeDrawer(); });
+
+// ---------- Ajustes e backup do progresso ----------
+function encodeSave(){ return btoa(unescape(encodeURIComponent(JSON.stringify(SAVE)))); }
+function decodeSave(s){ const o = JSON.parse(decodeURIComponent(escape(atob(s.trim())))); if (!o || o.v !== SAVE_V || !o.p) throw new Error('formato'); return o; }
+function settings(){
+  drawer.innerHTML = `<div class="panel" role="dialog" aria-label="Ajustes">
+    <div class="ph"><h2>Ajustes</h2><button class="ghost" id="close">Fechar</button></div>
+    <div class="set"><label class="toggle"><input type="checkbox" id="roma" ${SAVE.set.roma ? 'checked' : ''}> Mostrar romanização nas falas e no grimório</label></div>
+    <div class="set"><label class="label" for="rate">Velocidade da voz</label>
+      <select id="rate"><option value="0.6">Lenta</option><option value="0.85">Normal</option><option value="1">Rápida</option></select>
+      <p style="font-size:14px;color:var(--muted)">A voz usa o sintetizador do aparelho. Se uma língua não falar, instale a voz de japonês ou coreano nas configurações de texto para fala do celular. O botão "Não consigo ouvir" mostra o som escrito.</p></div>
+    <div class="set"><span class="label">Vozes do aparelho</span>
+      <div class="row"><span id="vjp" style="font-size:15px">Japonês: verificando…</span><button class="ghost" data-test="ja-JP">Testar</button></div>
+      <div class="row"><span id="vkr" style="font-size:15px">Coreano: verificando…</span><button class="ghost" data-test="ko-KR">Testar</button></div>
+      ${IS_NATIVE && NTTS ? `<div class="row"><button class="ghost" id="install">Abrir instalação de vozes</button></div>` : ''}</div>
+    <div class="set"><span class="label">Copiar progresso</span>
+      <p style="font-size:14px;color:var(--muted)">O progresso fica salvo neste aparelho. Guarde este código para levar o jogo para outro aparelho ou para o app instalado.</p>
+      <textarea id="exp" readonly>${encodeSave()}</textarea>
+      <div class="row"><button class="ghost" id="copy">Copiar código</button></div></div>
+    <div class="set"><label class="label" for="imp">Restaurar progresso</label>
+      <textarea id="imp" placeholder="Cole aqui um código de progresso"></textarea>
+      <div class="row"><button class="ghost" id="load">Restaurar</button></div></div>
+    <p class="msg" id="msg"></p>
+  </div>`;
+  drawer.hidden = false;
+  $('#rate').value = String(SAVE.set.rate);
+  const SAMPLE = {'ja-JP':'こんにちは', 'ko-KR':'안녕하세요'};
+  const checkVoices = async () => {
+    for (const [id, lang, name] of [['#vjp', 'ja-JP', 'Japonês'], ['#vkr', 'ko-KR', 'Coreano']]) {
+      const ok = await hasVoice(lang); const el = $(id);
+      if (el) el.innerHTML = `${name}: ${ok ? '<span style="color:var(--ok)">instalada</span>' : '<span style="color:var(--err)">não encontrada</span>'}`;
+    }
+  };
+  checkVoices(); setTimeout(checkVoices, 1200);
+  drawer.querySelectorAll('[data-test]').forEach(b => b.onclick = () => sayIn(SAMPLE[b.dataset.test], b.dataset.test));
+  if ($('#install')) $('#install').onclick = () => { try { NTTS.openInstall().catch(() => {}); } catch(e) {} $('#msg').textContent = 'Depois de baixar as vozes, volte ao app e toque em Testar.'; };
+  $('#close').onclick = () => { closeDrawer(); title(); };
+  $('#roma').onchange = e => { SAVE.set.roma = e.target.checked; persist(); };
+  $('#rate').onchange = e => { SAVE.set.rate = parseFloat(e.target.value); persist(); };
+  $('#copy').onclick = () => {
+    const t = $('#exp');
+    try { navigator.clipboard.writeText(t.value).then(() => $('#msg').textContent = 'Código copiado.', () => { t.select(); $('#msg').textContent = 'Selecionei o código: copie com o menu do aparelho.'; }); }
+    catch(e) { t.select(); $('#msg').textContent = 'Selecionei o código: copie com o menu do aparelho.'; }
+  };
+  $('#load').onclick = () => {
+    try { SAVE = decodeSave($('#imp').value); persist(); $('#msg').textContent = 'Progresso restaurado.'; }
+    catch(e) { $('#msg').textContent = 'Código inválido. Confira se colou o código inteiro, sem cortes.'; }
+  };
+  $('#close').focus();
+}
+
+// ---------- Tela de título ----------
+function title(){
+  closeDrawer(); cur = null; P = null; delete document.body.dataset.lang;
+  try { if (NTTS) NTTS.stop().catch(() => {}); else speechSynthesis.cancel(); } catch(e) {}
+  const card = lang => {
+    const L = STORY[lang], p = SAVE.p[lang];
+    const st = p ? ((L.nodes[p.node] || {}).st || (p.node === 'END' ? 12 : 1)) : 0;
+    const meta = p ? `<div class="meta"><span>${p.done.includes(1) ? 'Capítulo I concluído' : `Capítulo I · etapa ${st}/12`}</span><span>Fluência ${p.flu}%</span><span>Mácula ${p.mac}/${MAX_MAC}</span><span>Grimório ${Object.keys(p.learned).length}</span></div>` : '';
+    return `<section class="world ${lang}">
+      <span class="gl ${L.cls}" aria-hidden="true">${L.glyph}</span>
+      <span class="label">${L.lang} · do zero à fluência</span>
+      <h2>${esc(L.name)}</h2><p>${esc(L.pitch)}</p>${meta}
+      <div class="row">${p ? `<button class="btn" data-open="${lang}">Continuar</button><button class="ghost" data-reset="${lang}">Recomeçar</button>` : `<button class="btn" data-open="${lang}">Começar</button>`}</div>
+      <div data-confirm="${lang}"></div></section>`;
+  };
+  app.innerHTML = `<div class="title">
+    <div class="brand">
+      <div class="mark"><span class="k1">鏡</span><span class="dot">·</span><span class="k2">거울</span></div>
+      <h1>Kagami Geoul</h1>
+      <p>Dois espelhos, dois mundos dos mortos. Em cada um, aprender a língua é a única forma de voltar.</p>
+    </div>
+    <div class="worlds">${card('jp')}${card('kr')}</div>
+    <div class="row"><button class="ghost" id="set">Ajustes e backup</button></div>
+    <p class="foot">Piloto offline. Cada erro abre uma rota alternativa e aumenta a mácula; três acertos seguidos a fazem recuar. Muitos erros seguidos levam a um final ruim, mas sempre é possível voltar ao último ponto de purificação. O progresso é salvo automaticamente neste aparelho.</p>
+  </div>`;
+  app.querySelectorAll('[data-open]').forEach(b => b.onclick = () => open(b.dataset.open, false));
+  app.querySelectorAll('[data-reset]').forEach(b => b.onclick = () => {
+    const lang = b.dataset.reset, box = app.querySelector(`[data-confirm="${lang}"]`);
+    box.innerHTML = `<div class="confirm"><p>Recomeçar apaga o progresso de ${esc(STORY[lang].name)}: grimório, aliados e itens. O outro idioma não é afetado.</p>
+      <div class="row"><button class="btn" style="background:var(--err)" data-yes>Apagar e recomeçar</button><button class="ghost" data-no>Cancelar</button></div></div>`;
+    box.querySelector('[data-yes]').onclick = () => open(lang, true);
+    box.querySelector('[data-no]').onclick = () => { box.innerHTML = ''; };
+  });
+  $('#set').onclick = settings;
+  window.scrollTo({top:0});
+}
+
+// Botão "voltar" do Android: fecha gaveta, volta ao menu, ou sai do app.
+if (IS_NATIVE) {
+  const AppP = (CAP.Plugins && CAP.Plugins.App) || (CAP.registerPlugin && CAP.registerPlugin('App'));
+  try {
+    AppP && AppP.addListener('backButton', () => {
+      if (!drawer.hidden) closeDrawer();
+      else if (cur) title();
+      else AppP.exitApp();
+    });
+  } catch(e) {}
+}
+
+title();
+
+</script>
+
+</body>
+</html>
