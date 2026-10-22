@@ -11,6 +11,22 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Confere se tudo foi enviado antes de gastar tempo compilando.
+      - name: Verificar arquivos do projeto
+        run: |
+          falta=0
+          for f in package.json package-lock.json capacitor.config.json \
+                   www/index.html www/fonts/fonts.css \
+                   android/gradlew android/build.gradle android/settings.gradle android/variables.gradle \
+                   android/capacitor.settings.gradle android/app/build.gradle android/app/capacitor.build.gradle \
+                   android/app/kagami-debug.keystore android/app/src/main/AndroidManifest.xml \
+                   android/gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.properties; do
+            if [ ! -f "$f" ]; then echo "::error::Falta no repositório: $f"; falta=1; fi
+          done
+          n=$(ls www/fonts/*.woff2 2>/dev/null | wc -l)
+          if [ "$n" -lt 9 ]; then echo "::error::A pasta www/fonts deveria ter 9 arquivos .woff2 e tem $n"; falta=1; fi
+          exit $falta
+
       - uses: actions/setup-node@v5
         with:
           node-version: 22
