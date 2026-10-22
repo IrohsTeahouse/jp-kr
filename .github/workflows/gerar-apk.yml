@@ -22,7 +22,11 @@ jobs:
           java-version: '17'
 
       # Garante o SDK do Android, mesmo que a imagem do GitHub mude.
+      # Lista os pacotes explicitamente: o padrão da ação inclui o pacote
+      # antigo "tools", que não existe mais e faz a etapa falhar.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
       - uses: gradle/actions/setup-gradle@v4
 
